@@ -77,6 +77,7 @@ export type OrderRecord = {
   requestedTime: string;
   deliveryAddress?: DeliveryAddress;
   orderNote: string;
+  adminNotes?: string;
   lines: OrderLine[];
   subtotalPence: number;
   deliveryFeePence: number;
@@ -230,18 +231,6 @@ function validateRequestedTime(value: unknown) {
   return requested;
 }
 
-function validateWorldpaySession(value: unknown) {
-  if (typeof value !== "string" || value.length > 500) return undefined;
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && ["try.access.worldpay.com", "access.worldpay.com"].includes(url.hostname)
-      ? url.toString()
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export function getDeliveryFeePence() {
   const configured = Number(process.env.DELIVERY_FEE_PENCE);
   return Number.isInteger(configured) && configured >= 0 ? configured : 350;
@@ -310,16 +299,6 @@ export function validateCheckout(input: unknown) {
   const maximumTotal = Number.isInteger(configuredMaximum) && configuredMaximum > 0 ? configuredMaximum : 100_000;
   if (totalPence > maximumTotal) throw new CheckoutValidationError("This order is above the online checkout limit. Please contact the restaurant.");
 
-  const sessionsInput = body.worldpaySessions && typeof body.worldpaySessions === "object"
-    ? body.worldpaySessions as Record<string, unknown>
-    : {};
-  const worldpaySessions = provider === "worldpay"
-    ? { card: validateWorldpaySession(sessionsInput.card), cvv: validateWorldpaySession(sessionsInput.cvv) }
-    : undefined;
-  if (provider === "worldpay" && (!worldpaySessions?.card || !worldpaySessions.cvv)) {
-    throw new CheckoutValidationError("Secure Worldpay card sessions are missing or invalid.");
-  }
-
   return {
     provider,
     fulfilment,
@@ -331,6 +310,5 @@ export function validateCheckout(input: unknown) {
     subtotalPence,
     deliveryFeePence,
     totalPence,
-    worldpaySessions,
   };
 }

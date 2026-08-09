@@ -29,7 +29,7 @@
 .faqList details[open] summary i::after { transform: rotate(0); }
 .faqList details > div { max-width: 49rem; padding: 0 2rem 2.8rem clamp(4rem, 8vw, 8rem); }
 .faqList details > div p { margin: 0 0 1rem; font-family: "Iowan Old Style", Georgia, serif; font-size: clamp(1rem, 1.4vw, 1.25rem); line-height: 1.65; }
-.faqList details > div a { display: inline-block; padding-block: .7rem; border-bottom: 1px solid rgba(10, 26, 22, .3); font-size: .54rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.faqList details > div a { display: inline-flex; min-height: 2.75rem; align-items: center; padding-block: .55rem; border-bottom: 1px solid rgba(10, 26, 22, .3); font-size: .54rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
 
 .faqFooter { padding: clamp(5rem, 10vw, 10rem) clamp(1.25rem, 7vw, 7rem); background: #071310; color: #f2ead9; }
 .faqFooter > p { color: #c89b53; font-size: .56rem; letter-spacing: .22em; text-transform: uppercase; }

@@ -21,6 +21,9 @@
   z-index: 1000;
   top: 1rem;
   left: 1rem;
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
   padding: .75rem 1rem;
   background: var(--story-ivory);
   color: var(--story-ink);

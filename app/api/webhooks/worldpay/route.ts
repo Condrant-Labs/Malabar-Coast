@@ -1,57 +1,64 @@
-import { timingSafeEqual } from "node:crypto";
 import { applyPaymentEvent } from "../../../lib/order-store";
-import type { PaymentStatus } from "../../../lib/orders";
-import { isValidOrderId, noStoreJson, readLimitedJson, RequestBodyTooLargeError } from "../../../lib/security";
+import {
+  isKnownWorldpayEventType,
+  resolveWorldpayAmount,
+  resolveWorldpayCurrency,
+  resolveWorldpayPaymentStatus,
+  verifyWorldpayEventSignature,
+} from "../../../lib/payments/worldpay-events";
+import { noStoreJson, readLimitedText, RequestBodyTooLargeError, isValidOrderId } from "../../../lib/security";
 
 export const runtime = "nodejs";
 
-function safeEqual(left: string, right: string) {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 export async function POST(request: Request) {
-  const username = process.env.WORLDPAY_WEBHOOK_USERNAME;
-  const password = process.env.WORLDPAY_WEBHOOK_PASSWORD;
-  if (!username || !password) return noStoreJson({ error: "Worldpay webhook authentication is not configured." }, { status: 503 });
-  const expected = `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
-  if (!safeEqual(request.headers.get("authorization") || "", expected)) return noStoreJson({ error: "Unauthorized." }, { status: 401 });
-  let event: Record<string, unknown>;
+  let payload: string;
   try {
-    event = await readLimitedJson(request, 1_000_000) as Record<string, unknown>;
+    payload = await readLimitedText(request, 1_000_000);
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) return noStoreJson({ error: "Payload too large." }, { status: 413 });
+    return noStoreJson({ error: "Webhook body could not be read." }, { status: 400 });
+  }
+
+  const signatureSecret = process.env.WORLDPAY_WEBHOOK_SECRET?.trim();
+  if (!signatureSecret) return noStoreJson({ error: "Worldpay webhook signature is not configured." }, { status: 503 });
+  if (!verifyWorldpayEventSignature(payload, request.headers.get("event-signature") || "", signatureSecret)) {
+    return noStoreJson({ error: "Invalid signature." }, { status: 400 });
+  }
+
+  let event: Record<string, unknown>;
+  try {
+    event = JSON.parse(payload) as Record<string, unknown>;
+  } catch {
     return noStoreJson({ error: "Invalid JSON payload." }, { status: 400 });
   }
   const details = event.eventDetails && typeof event.eventDetails === "object" ? event.eventDetails as Record<string, unknown> : event;
+  if (details.classification && details.classification !== "payment") return noStoreJson({ received: true });
+
   const orderId = [details.transactionReference, event.transactionReference].find((value) => typeof value === "string") as string | undefined;
   const eventId = [event.eventId, event.id].find((value) => typeof value === "string") as string | undefined;
-  const providerReference = [details.paymentId, details.paymentReference, event.paymentId, event.paymentReference].find((value) => typeof value === "string") as string | undefined;
+  const providerReference = [details.paymentId, event.paymentId].find((value) => typeof value === "string") as string | undefined;
   const eventType = String(details.type || event.type || details.outcome || "unknown");
   if (!orderId || !isValidOrderId(orderId) || !eventId || eventId.length > 180) return noStoreJson({ received: true });
 
-  const lowered = eventType.toLowerCase();
-  let paymentStatus: PaymentStatus | undefined;
-  if (lowered.includes("partial") && lowered.includes("refund")) paymentStatus = "partially_refunded";
-  else if (lowered.includes("refund")) paymentStatus = "refunded";
-  else if (lowered.includes("chargeback") || lowered.includes("dispute")) paymentStatus = "disputed";
-  else if (lowered.includes("reversal") || lowered.includes("reversed")) paymentStatus = "reversed";
-  else if (lowered.includes("authorized") || lowered.includes("settled") || lowered.includes("captured")) paymentStatus = "paid";
-  else if (lowered.includes("refused") || lowered.includes("failed") || lowered.includes("error")) paymentStatus = "failed";
-  else if (lowered.includes("cancel")) paymentStatus = "cancelled";
-  else if (lowered.includes("expire")) paymentStatus = "expired";
-  const amountPence = Number(details.amount ?? event.amount);
-  const currency = [details.currency, event.currency].find((value) => typeof value === "string") as string | undefined;
-  if (paymentStatus) await applyPaymentEvent({
-    provider: "worldpay",
-    eventId,
-    orderId,
-    paymentStatus,
-    outcome: eventType,
-    providerReference,
-    amountPence: Number.isInteger(amountPence) ? amountPence : undefined,
-    currency,
-  });
+  // Unknown provider events are acknowledged but never guessed into a financial state.
+  if (!isKnownWorldpayEventType(eventType)) {
+    console.warn("Ignored an unmapped Worldpay event type.", eventType.slice(0, 60));
+    return noStoreJson({ received: true });
+  }
+
+  const paymentStatus = resolveWorldpayPaymentStatus(eventType);
+  if (paymentStatus) {
+    const applied = await applyPaymentEvent({
+      provider: "worldpay",
+      eventId,
+      orderId,
+      paymentStatus,
+      outcome: eventType,
+      providerReference,
+      amountPence: resolveWorldpayAmount(details, event),
+      currency: resolveWorldpayCurrency(details, event),
+    });
+    if (!applied) console.warn("Rejected a Worldpay event that did not match its stored order.", eventId);
+  }
   return noStoreJson({ received: true });
 }

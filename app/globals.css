@@ -379,7 +379,7 @@ button { color: inherit; font: inherit; }
   border-bottom: 1px solid var(--line);
 }
 
-.brand { display: block; width: clamp(11rem, 15vw, 15.5rem); }
+.brand { display: flex; width: clamp(11rem, 15vw, 15.5rem); min-height: 2.75rem; align-items: center; }
 .brand img { display: block; width: 100%; height: auto; }
 
 .navMinimal .bookButton,
@@ -1239,6 +1239,8 @@ h1 .indent { margin-left: clamp(2rem, 10vw, 10rem); color: transparent; -webkit-
   display: grid;
   width: 2.65rem;
   height: 2.65rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   place-items: center;
   border: 1px solid rgba(242, 234, 217, .25);
   border-radius: 50%;
@@ -1253,7 +1255,7 @@ h1 .indent { margin-left: clamp(2rem, 10vw, 10rem); color: transparent; -webkit-
 .siteFooterLead > div > small { display: block; max-width: 24rem; margin-top: 1rem; color: rgba(242, 234, 217, .4); font-size: .51rem; line-height: 1.6; }
 
 .siteFooterNav { display: flex; flex-direction: column; align-self: end; }
-.siteFooterNav a { display: flex; justify-content: space-between; gap: 2rem; padding: .85rem 0; border-bottom: 1px solid rgba(242, 234, 217, .17); font-size: .56rem; letter-spacing: .17em; text-transform: uppercase; }
+.siteFooterNav a { display: flex; min-height: 2.75rem; justify-content: space-between; gap: 2rem; align-items: center; padding: .65rem 0; border-bottom: 1px solid rgba(242, 234, 217, .17); font-size: .56rem; letter-spacing: .17em; text-transform: uppercase; }
 .siteFooterNav a span { color: #c89b53; transition: transform .25s; }
 .siteFooterNav a:hover span,
 .siteFooterNav a:focus-visible span { transform: translate(.2rem, -.12rem); }
@@ -1261,7 +1263,7 @@ h1 .indent { margin-left: clamp(2rem, 10vw, 10rem); color: transparent; -webkit-
 .siteFooterAddress { display: flex; flex-direction: column; align-self: end; font-style: normal; }
 .siteFooterAddress strong { margin-bottom: .6rem; font-family: "Iowan Old Style", Georgia, serif; font-size: 1.45rem; font-weight: 400; }
 .siteFooterAddress > span { color: rgba(242, 234, 217, .62); font-family: "Iowan Old Style", Georgia, serif; font-size: .9rem; line-height: 1.5; }
-.siteFooterAddress > a { display: flex; justify-content: space-between; margin-top: 1.7rem; padding: .9rem 0; border-bottom: 1px solid rgba(242, 234, 217, .22); font-size: .54rem; letter-spacing: .18em; text-transform: uppercase; }
+.siteFooterAddress > a { display: flex; min-height: 2.75rem; justify-content: space-between; align-items: center; margin-top: 1.7rem; padding: .65rem 0; border-bottom: 1px solid rgba(242, 234, 217, .22); font-size: .54rem; letter-spacing: .18em; text-transform: uppercase; }
 .siteFooterAddress > a span { color: #c89b53; }
 
 .siteFooterBrand { display: grid; grid-template-columns: 1fr auto 1fr; gap: clamp(1.5rem, 3vw, 3rem); align-items: center; max-width: 94rem; margin: clamp(4rem, 7vw, 7rem) auto 2.5rem; }
@@ -1274,7 +1276,7 @@ h1 .indent { margin-left: clamp(2rem, 10vw, 10rem); color: transparent; -webkit-
 .siteFooterLegal > div i { color: rgba(242, 234, 217, .33); font-style: normal; }
 .siteFooterLegal p { margin: 0; }
 
-.siteFooterCredit { display: block; width: fit-content; margin: 2.5rem auto 0; color: rgba(242, 234, 217, .44); font-size: .49rem; letter-spacing: .14em; text-transform: uppercase; }
+.siteFooterCredit { display: flex; width: fit-content; min-height: 2.75rem; align-items: center; margin: 2.5rem auto 0; color: rgba(242, 234, 217, .44); font-size: .49rem; letter-spacing: .14em; text-transform: uppercase; }
 .siteFooterCredit span { color: #c89b53; }
 
 @media (max-width: 820px) {
@@ -1289,7 +1291,7 @@ h1 .indent { margin-left: clamp(2rem, 10vw, 10rem); color: transparent; -webkit-
   .siteFooterAddress { margin-top: 3.5rem; }
   .siteFooterSocials { gap: .55rem; }
   .siteFooterSocials > span,
-  .siteFooterSocials > a { width: 2.45rem; height: 2.45rem; }
+  .siteFooterSocials > a { width: 2.75rem; height: 2.75rem; }
   .siteFooterBrand { margin-top: 4rem; }
   .siteFooterLegal { flex-direction: column; gap: 1.25rem; font-size: .55rem; }
   .siteFooterLegal > div { flex-wrap: wrap; }

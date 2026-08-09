@@ -4,8 +4,13 @@ import type { NextResponse } from "next/server";
 
 const ORDER_ACCESS_COOKIE = "malabar_order_access";
 const ORDER_ACCESS_SECONDS = 30 * 24 * 60 * 60;
+const MAX_GRANTED_ORDERS = 10;
 
-type OrderAccessPayload = { version: 1; orderId: string; expiresAt: number };
+// Version 1 granted a single order, so a second checkout silently revoked the first
+// order page. Version 2 carries a bounded list and still verifies version 1 cookies.
+type OrderAccessPayloadV1 = { version: 1; orderId: string; expiresAt: number };
+type OrderAccessPayloadV2 = { version: 2; orderIds: string[]; expiresAt: number };
+type OrderAccessPayload = OrderAccessPayloadV1 | OrderAccessPayloadV2;
 
 function shouldUseSecureCookies() {
   try {
@@ -42,10 +47,29 @@ export function isProductionOrderAccessConfigured() {
   return Boolean(process.env.ORDER_ACCESS_SECRET?.trim() && process.env.ORDER_ACCESS_SECRET!.trim().length >= 32);
 }
 
-export function setOrderAccess(response: NextResponse, orderId: string) {
-  const payload: OrderAccessPayload = {
-    version: 1,
-    orderId,
+function verifiedOrderIds(token: string | undefined): string[] {
+  if (!token) return [];
+  const [encoded, signature] = token.split(".");
+  const expected = encoded ? sign(encoded) : null;
+  if (!encoded || !signature || !expected || !safeEqual(signature, expected)) return [];
+
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as OrderAccessPayload;
+    if (payload.expiresAt <= Math.floor(Date.now() / 1000)) return [];
+    if (payload.version === 1) return typeof payload.orderId === "string" ? [payload.orderId] : [];
+    if (payload.version === 2) return Array.isArray(payload.orderIds) ? payload.orderIds.filter((id) => typeof id === "string") : [];
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export async function setOrderAccess(response: NextResponse, orderId: string) {
+  const cookieStore = await cookies();
+  const granted = verifiedOrderIds(cookieStore.get(ORDER_ACCESS_COOKIE)?.value);
+  const payload: OrderAccessPayloadV2 = {
+    version: 2,
+    orderIds: [orderId, ...granted.filter((id) => id !== orderId)].slice(0, MAX_GRANTED_ORDERS),
     expiresAt: Math.floor(Date.now() / 1000) + ORDER_ACCESS_SECONDS,
   };
   const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -63,16 +87,5 @@ export function setOrderAccess(response: NextResponse, orderId: string) {
 
 export async function hasOrderAccess(orderId: string) {
   const cookieStore = await cookies();
-  const token = cookieStore.get(ORDER_ACCESS_COOKIE)?.value;
-  if (!token) return false;
-  const [encoded, signature] = token.split(".");
-  const expected = encoded ? sign(encoded) : null;
-  if (!encoded || !signature || !expected || !safeEqual(signature, expected)) return false;
-
-  try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as OrderAccessPayload;
-    return payload.version === 1 && payload.orderId === orderId && payload.expiresAt > Math.floor(Date.now() / 1000);
-  } catch {
-    return false;
-  }
+  return verifiedOrderIds(cookieStore.get(ORDER_ACCESS_COOKIE)?.value).includes(orderId);
 }

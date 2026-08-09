@@ -9,9 +9,31 @@ const globalRateState = globalThis as typeof globalThis & {
 const rateLimits = globalRateState.malabarRateLimits ?? new Map<string, RateEntry>();
 globalRateState.malabarRateLimits = rateLimits;
 
+// Headers an edge platform overwrites on every request. A client cannot forge these
+// because the platform replaces whatever the browser sent.
+const platformClientAddressHeaders = ["cf-connecting-ip", "true-client-ip", "x-vercel-forwarded-for", "fly-client-ip"];
+
+function trustedProxyHops() {
+  const configured = Number(process.env.TRUSTED_PROXY_COUNT);
+  return Number.isInteger(configured) && configured >= 0 ? configured : 1;
+}
+
+// `x-forwarded-for` is appended to by each proxy, so only the entries a trusted proxy
+// added can be believed. Reading the left-most entry lets any client forge its address
+// and reset every rate-limit bucket, so the address is read from the right instead.
 export function getClientAddress(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
+  for (const header of platformClientAddressHeaders) {
+    const value = request.headers.get(header)?.split(",")[0]?.trim();
+    if (value) return value;
+  }
+
+  const hops = request.headers.get("x-forwarded-for")?.split(",").map((value) => value.trim()).filter(Boolean) ?? [];
+  if (hops.length > 0) {
+    const index = Math.min(Math.max(hops.length - trustedProxyHops(), 0), hops.length - 1);
+    return hops[index];
+  }
+
+  return request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 export function checkRateLimit(bucket: string, key: string, limit: number, windowMs: number) {
@@ -100,6 +122,15 @@ export async function readLimitedText(request: Request, maximumBytes: number) {
 
 export async function readLimitedJson(request: Request, maximumBytes: number): Promise<unknown> {
   return JSON.parse(await readLimitedText(request, maximumBytes));
+}
+
+// `request.formData()` buffers an unbounded body when the sender omits content-length,
+// so administrator form posts are read through the same streaming byte ceiling.
+export async function readLimitedFormData(request: Request, maximumBytes: number) {
+  const contentType = request.headers.get("content-type") || "";
+  // Anything other than a plain HTML form post yields no fields, so the CSRF check fails closed.
+  if (!contentType.startsWith("application/x-www-form-urlencoded")) return new URLSearchParams();
+  return new URLSearchParams(await readLimitedText(request, maximumBytes));
 }
 
 export function isValidOrderId(value: string) {

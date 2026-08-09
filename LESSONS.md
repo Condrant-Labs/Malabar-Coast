@@ -27,3 +27,13 @@
 - A branded intro should use one clear replay contract: mount on every homepage entry and expose an explicit event for same-route logo clicks.
 - Smooth handoffs come from spatial continuity, not only opacity; land the intro logo on the real navbar logo before the overlay disappears.
 - Keep reduced-motion behavior short and functional even when the standard experience intentionally replays a cinematic loader.
+
+# Restaurant operations lessons
+
+- Keep payment state and fulfilment state operationally distinct: provider webhooks establish financial truth, while staff advance only valid paid-order stages.
+- A kitchen board and an accounting report need different density. The board prioritizes due time, quantities and notes; the report prioritizes comparable totals and trends.
+- Wide order tables and multi-lane kitchen boards should scroll inside their own regions so the application shell never creates body-level horizontal overflow.
+- Staff notes belong behind a narrow database function that can change only the note field; never reuse a general JSON update for order administration.
+- Day and month boundaries must follow the restaurant time zone, including daylight-saving offsets, rather than server-local or naive UTC midnight.
+- Readiness must verify the database contract version, not merely that one table is reachable; otherwise a partially applied schema can look healthy while administrator actions fail.
+- Audit touch targets at the shared shell level as well as on primary buttons. Brand, footer, table-reference and tab links are easy to leave below 44px even when the main flows are responsive.

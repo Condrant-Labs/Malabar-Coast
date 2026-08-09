@@ -1,27 +1,10 @@
 import type { NextConfig } from "next";
 
-const isDevelopment = process.env.NODE_ENV === "development";
 const canonicalSiteUsesHttps = process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") ?? false;
 
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://try.access.worldpay.com https://access.worldpay.com`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://www.google.com https://maps.gstatic.com https://*.googleusercontent.com",
-  "font-src 'self' data:",
-  "connect-src 'self' https://api.stripe.com https://try.access.worldpay.com https://access.worldpay.com",
-  "frame-src 'self' https://www.google.com https://maps.google.com https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://try.access.worldpay.com https://access.worldpay.com",
-  "worker-src 'self' blob:",
-  "manifest-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  ...(!isDevelopment && canonicalSiteUsesHttps ? ["upgrade-insecure-requests"] : []),
-].join("; ");
-
+// The Content Security Policy lives in proxy.ts because it carries a per-request nonce.
+// Setting it here as well would send two policies and both would be enforced.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: contentSecurityPolicy },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

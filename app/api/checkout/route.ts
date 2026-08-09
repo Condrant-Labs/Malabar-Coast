@@ -3,7 +3,7 @@ import { applyPaymentEvent, attachCheckoutProviderReference, createCheckoutOrder
 import { CheckoutValidationError, type OrderRecord, validateCheckout } from "../../lib/orders";
 import { setOrderAccess, isOrderAccessConfigured } from "../../lib/order-access";
 import { createStripeCheckout, isStripeConfigured } from "../../lib/payments/stripe";
-import { authorizeWorldpay, isWorldpayCheckoutEnabled } from "../../lib/payments/worldpay";
+import { createWorldpayHostedPayment, isWorldpayCheckoutEnabled } from "../../lib/payments/worldpay";
 import { checkRateLimit, configuredSiteOrigin, getClientAddress, isTrustedOrigin, noStoreJson, readLimitedJson, RequestBodyTooLargeError } from "../../lib/security";
 
 export const runtime = "nodejs";
@@ -25,9 +25,9 @@ function checkoutFingerprint(checkout: ReturnType<typeof validateCheckout>) {
   }));
 }
 
-function orderResponse(body: unknown, orderId: string, init: ResponseInit = {}) {
+async function orderResponse(body: unknown, orderId: string, init: ResponseInit = {}) {
   const response = noStoreJson(body, init);
-  setOrderAccess(response, orderId);
+  await setOrderAccess(response, orderId);
   return response;
 }
 
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       return noStoreJson({ error: "This checkout key was already used for a different order." }, { status: 409 });
     }
     if (atomic.order.providerCheckoutUrl) {
-      return orderResponse({ orderId: atomic.order.id, redirectUrl: atomic.order.providerCheckoutUrl }, atomic.order.id);
+      return await orderResponse({ orderId: atomic.order.id, redirectUrl: atomic.order.providerCheckoutUrl }, atomic.order.id);
     }
     const baseUrl = configuredSiteOrigin(request);
 
@@ -82,28 +82,21 @@ export async function POST(request: Request) {
       const payment = await createStripeCheckout(atomic.order, baseUrl);
       const attached = await attachCheckoutProviderReference(atomic.order.id, "stripe", payment.providerReference, payment.redirectUrl);
       if (!attached) throw new Error("Stripe checkout identity could not be attached to the order.");
-      return orderResponse({ orderId: atomic.order.id, redirectUrl: payment.redirectUrl }, atomic.order.id);
+      return await orderResponse({ orderId: atomic.order.id, redirectUrl: payment.redirectUrl }, atomic.order.id);
     }
 
     if (!createdByRequest) {
-      return orderResponse({ error: "This checkout request is already being processed.", orderId: atomic.order.id }, atomic.order.id, { status: 409 });
+      return await orderResponse({ error: "This checkout request is already being processed.", orderId: atomic.order.id }, atomic.order.id, { status: 409 });
     }
 
-    const payment = await authorizeWorldpay(atomic.order, checkout.worldpaySessions);
-    await applyPaymentEvent({
-      provider: "worldpay",
-      eventId: `authorization:${payment.providerReference}:${payment.outcome}`,
-      orderId: atomic.order.id,
-      paymentStatus: payment.paid ? "paid" : "pending",
-      outcome: payment.outcome,
-      providerReference: payment.providerReference,
-      amountPence: atomic.order.totalPence,
-      currency: atomic.order.currency,
-    });
-    if (payment.paid) return orderResponse({ orderId: atomic.order.id, redirectUrl: `${baseUrl}/checkout/success?order_id=${atomic.order.id}&provider=worldpay` }, atomic.order.id);
-    if (payment.actionUrl) return orderResponse({ orderId: atomic.order.id, actionRequired: true, actionUrl: payment.actionUrl, outcome: payment.outcome }, atomic.order.id, { status: 202 });
-    await applyPaymentEvent({ provider: "worldpay", eventId: `failure:${atomic.order.id}:${Date.now()}`, orderId: atomic.order.id, paymentStatus: "failed", outcome: payment.outcome, providerReference: payment.providerReference, amountPence: atomic.order.totalPence, currency: atomic.order.currency });
-    return orderResponse({ error: "Worldpay could not authorize this payment. Please try another payment method.", orderId: atomic.order.id }, atomic.order.id, { status: 402 });
+    const payment = await createWorldpayHostedPayment(atomic.order, baseUrl);
+    // HPP creates the Worldpay payment only after the customer submits its hosted
+    // page, so the provider payment ID is intentionally bound later by a signed
+    // event or authenticated payment query. Binding the order ID here would reject
+    // the real payment ID when it arrives.
+    const attached = await attachCheckoutProviderReference(atomic.order.id, "worldpay", undefined, payment.redirectUrl);
+    if (!attached) throw new Error("Worldpay hosted checkout could not be attached to the order.");
+    return await orderResponse({ orderId: atomic.order.id, redirectUrl: payment.redirectUrl }, atomic.order.id);
   } catch (error) {
     if (order && createdByRequest) await applyPaymentEvent({
       provider: order.provider,

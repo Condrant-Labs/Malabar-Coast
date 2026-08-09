@@ -38,3 +38,29 @@
 - Reworked the final intro-logo keyframes so the large central mark scales and travels into the navbar logo while the loading layer crossfades away.
 - Preserved the 120 ms reduced-motion fallback for visitors who request minimized animation.
 - Verified TypeScript, ESLint, the production build, refresh playback, logo-click playback and the final logo-to-navbar alignment.
+
+2026-08-09 - End-to-end restaurant operations portal complete
+
+- Rebuilt `/admin` as a responsive multi-page operations system with overview, full order register, live kitchen board, day/month reporting, system readiness and detailed order workspaces.
+- Added database-backed staff notes through a bounded service-role RPC without exposing broader order writes or weakening the provider-owned payment lifecycle.
+- Added complete order pagination for reporting and operations filters, quick guarded fulfilment actions, responsive tables/boards, empty states, deployment checks and mobile navigation.
+- Kept payment truth webhook-owned: staff can move only paid orders through confirmed, preparing, ready, delivery and completed stages.
+- Verified 25 automated security/payment/database tests, ESLint, TypeScript, the production build, protected-route redirects and desktop/mobile live rendering with no body-level horizontal overflow.
+
+2026-08-09 - Production audit and release hardening complete
+
+- Re-audited every public, checkout and administrator route at desktop, tablet and mobile sizes, including navigation, filters, kitchen actions, report periods, empty states and order detail workspaces.
+- Raised shared public and administrator links and controls to 44px minimum touch targets without changing the visual density of the desktop layouts.
+- Added a versioned database-contract health function so readiness now fails when the required order functions or tables have not been deployed, and bounded Supabase health requests with a timeout.
+- Patched the transitive `nanoid` dependency and confirmed the production dependency audit reports no known vulnerabilities.
+- Reverified 25 automated tests, ESLint, the production build, security headers, protected-route redirects, response types, zero broken images and zero body-level horizontal overflow.
+- Deployment still requires live HTTPS, Supabase credentials and schema, a configured payment provider, monitoring secrets and owner-approved policy pages before orders can be accepted in production.
+
+2026-08-09 - Hosted Stripe and Worldpay checkout lifecycle complete
+
+- Replaced browser-embedded Worldpay card fields with full-page Hosted Payment Pages; the application no longer needs or exposes a Worldpay Checkout ID.
+- Kept Stripe on its full hosted Checkout page and added authenticated session reconciliation to match the Worldpay delayed-event recovery path.
+- Added HMAC verification for Worldpay Event-Signature headers, corrected HPP webhook amount parsing, and made the database bind Worldpay's real payment ID only after verified provider evidence arrives.
+- Added Worldpay Payment Queries reconciliation, dedicated expiry handling, production readiness checks, updated environment/documentation contracts and hosted-checkout regression tests.
+- Verified the actual Worldpay Try Payment Queries endpoint with the credentials in `.env.local` and the required versioned media type; the read-only request returned HTTP 200 without creating a payment.
+- Verified 33 automated security/payment/database tests, ESLint, TypeScript, the production build and `git diff --check`.

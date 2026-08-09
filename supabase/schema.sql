@@ -19,13 +19,42 @@ set
 where idempotency_key_hash is null or request_fingerprint is null;
 
 create index if not exists orders_status_created_at_idx on public.orders (status, created_at desc);
+-- The administrator dashboard reads the newest orders without a status filter, which the
+-- composite index above cannot serve.
+create index if not exists orders_created_at_idx on public.orders (created_at desc);
+-- Support lookups by customer contact, without exposing a separate PII column.
+create index if not exists orders_customer_email_idx on public.orders ((lower(data->'customer'->>'email')));
 create unique index if not exists orders_idempotency_key_hash_uidx
   on public.orders (idempotency_key_hash)
   where idempotency_key_hash is not null;
 
+-- The application only ever writes these values through the functions below, but the
+-- constraints keep a mistaken direct write or a future migration from inventing a status
+-- that the fulfilment and payment state machines do not recognise.
+do $$ begin
+  alter table public.orders add constraint orders_status_check check (status in (
+    'pending_payment', 'paid', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed',
+    'payment_failed', 'cancelled', 'expired', 'payment_partially_refunded', 'refunded',
+    'payment_disputed', 'payment_reversed'
+  )) not valid;
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.orders add constraint orders_provider_check
+    check (provider in ('stripe', 'worldpay')) not valid;
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.orders add constraint orders_id_shape_check
+    check (id ~ '^ord_[A-Za-z0-9_-]{20,60}$') not valid;
+exception when duplicate_object then null; end $$;
+
 alter table public.orders enable row level security;
 
--- No public policies are intentional. Only the server-side service role may read or write orders.
+-- No public policies are intentional. Only the server-side service role may read or write
+-- orders, and the grants are removed so a future policy cannot accidentally expose the
+-- customer contact details, address and basket held in `data`.
+revoke all on table public.orders from anon, authenticated;
 
 create table if not exists public.order_payment_events (
   provider text not null,
@@ -47,7 +76,21 @@ alter table public.order_payment_events add column if not exists currency text;
 create index if not exists order_payment_events_order_id_idx
   on public.order_payment_events (order_id, created_at desc);
 
+do $$ begin
+  alter table public.order_payment_events add constraint order_payment_events_provider_check
+    check (provider in ('stripe', 'worldpay')) not valid;
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.order_payment_events add constraint order_payment_events_status_check
+    check (payment_status in (
+      'pending', 'paid', 'failed', 'cancelled', 'expired',
+      'partially_refunded', 'refunded', 'disputed', 'reversed'
+    )) not valid;
+exception when duplicate_object then null; end $$;
+
 alter table public.order_payment_events enable row level security;
+revoke all on table public.order_payment_events from anon, authenticated;
 
 -- Claims one idempotency key exactly once. Concurrent callers either receive the
 -- same order or a conflict and cannot create a second provider checkout.
@@ -112,12 +155,13 @@ $$;
 revoke all on function public.create_checkout_order(text, text, text, text, jsonb, timestamptz) from public;
 grant execute on function public.create_checkout_order(text, text, text, text, jsonb, timestamptz) to service_role;
 
--- Attaches provider identity without replacing the order JSON read by another
--- transaction. A different provider reference is always rejected.
+-- Attaches hosted checkout navigation and, when the provider creates it before
+-- redirect, its identity. Worldpay HPP creates the payment ID only after the
+-- customer submits the hosted page, so a URL-only attachment is valid.
 create or replace function public.attach_checkout_provider_reference(
   p_order_id text,
   p_provider text,
-  p_provider_reference text,
+  p_provider_reference text default null,
   p_provider_checkout_url text default null
 )
 returns jsonb
@@ -130,7 +174,8 @@ declare
   changed_at timestamptz := now();
   changed_at_iso text := to_char(changed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 begin
-  if p_provider_reference is null or length(p_provider_reference) < 3 or length(p_provider_reference) > 180
+  if (p_provider_reference is null and p_provider_checkout_url is null)
+    or (p_provider_reference is not null and (length(p_provider_reference) < 3 or length(p_provider_reference) > 180))
     or (p_provider_checkout_url is not null and (length(p_provider_checkout_url) > 2048 or p_provider_checkout_url !~ '^https://')) then
     raise exception 'Invalid provider checkout identity';
   end if;
@@ -142,7 +187,12 @@ begin
 
   if not found or (
     current_data->>'providerReference' is not null
+    and p_provider_reference is not null
     and current_data->>'providerReference' <> p_provider_reference
+  ) or (
+    current_data->>'providerCheckoutUrl' is not null
+    and p_provider_checkout_url is not null
+    and current_data->>'providerCheckoutUrl' <> p_provider_checkout_url
   ) then
     return null;
   end if;
@@ -236,6 +286,40 @@ $$;
 revoke all on function public.transition_order_status(text, text) from public;
 grant execute on function public.transition_order_status(text, text) to service_role;
 
+-- Stores private kitchen/operations notes without allowing staff to rewrite the
+-- customer basket, totals, payment identity or audit history.
+create or replace function public.update_order_admin_notes(p_order_id text, p_admin_notes text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_data jsonb;
+  changed_at timestamptz := now();
+  changed_at_iso text := to_char(changed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+begin
+  if p_admin_notes is null or length(p_admin_notes) > 2000 then
+    raise exception 'Invalid administrator notes';
+  end if;
+
+  update public.orders
+  set
+    updated_at = changed_at,
+    data = data || jsonb_build_object(
+      'adminNotes', p_admin_notes,
+      'updatedAt', changed_at_iso
+    )
+  where id = p_order_id
+  returning data into current_data;
+
+  return current_data;
+end;
+$$;
+
+revoke all on function public.update_order_admin_notes(text, text) from public;
+grant execute on function public.update_order_admin_notes(text, text) to service_role;
+
 -- Remove the earlier six-argument overload before installing the identity-bound
 -- event function. This prevents old application code from bypassing value checks.
 drop function if exists public.apply_order_payment_event(text, text, text, text, text, text);
@@ -294,8 +378,7 @@ begin
     return false;
   end if;
 
-  if p_provider = 'stripe'
-    and p_payment_status in ('paid', 'partially_refunded', 'refunded', 'disputed', 'reversed')
+  if p_payment_status in ('paid', 'partially_refunded', 'refunded', 'disputed', 'reversed')
     and (p_provider_reference is null or p_amount_pence is null or p_currency is null) then
     return false;
   end if;
@@ -388,3 +471,62 @@ $$;
 
 revoke all on function public.apply_order_payment_event(text, text, text, text, text, text, integer, text) from public;
 grant execute on function public.apply_order_payment_event(text, text, text, text, text, text, integer, text) to service_role;
+
+-- Retention. Customer name, email, phone and delivery address are stored inside `data`
+-- and would otherwise be kept for the life of the project. This removes the personal
+-- fields from settled orders older than the retention window while keeping the
+-- reference, totals, basket and payment audit trail needed for accounting.
+-- Schedule it, for example with pg_cron:
+--   select cron.schedule('redact-old-orders', '0 3 * * *', $$select public.redact_old_order_personal_data(365)$$);
+create or replace function public.redact_old_order_personal_data(p_retain_days integer default 365)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  redacted integer;
+begin
+  if p_retain_days is null or p_retain_days < 30 then
+    raise exception 'Refusing to redact orders newer than 30 days';
+  end if;
+
+  with cleared as (
+    update public.orders
+    set data = (data - 'deliveryAddress') || jsonb_build_object(
+      'customer', jsonb_build_object('name', 'redacted', 'email', 'redacted', 'phone', 'redacted'),
+      'orderNote', '',
+      'personalDataRedactedAt', to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+    )
+    where created_at < now() - make_interval(days => p_retain_days)
+      and status in ('completed', 'cancelled', 'expired', 'refunded', 'payment_failed')
+      and data->>'personalDataRedactedAt' is null
+    returning 1
+  )
+  select count(*)::integer into redacted from cleared;
+
+  return redacted;
+end;
+$$;
+
+revoke all on function public.redact_old_order_personal_data(integer) from public;
+grant execute on function public.redact_old_order_personal_data(integer) to service_role;
+
+-- Readiness contract. Keep this last: if applying any required table or function above
+-- fails, the version is never advanced and the matching application stays not-ready.
+create or replace function public.order_database_health()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'version', '2026-08-09-hosted-payments-v2',
+    'ordersTable', to_regclass('public.orders') is not null,
+    'paymentEventsTable', to_regclass('public.order_payment_events') is not null
+  );
+$$;
+
+revoke all on function public.order_database_health() from public;
+grant execute on function public.order_database_health() to service_role;

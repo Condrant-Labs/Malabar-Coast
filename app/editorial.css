@@ -300,7 +300,7 @@
 .hallFaqList article > span { grid-row: 1 / 4; color: var(--ed-brass); font-size: .52rem; letter-spacing: .15em; }
 .hallFaqList h3 { margin: 0; font-family: "Iowan Old Style",Georgia,serif; font-size: clamp(1.35rem,2vw,2rem); font-weight: 400; }
 .hallFaqList p { max-width: 42rem; margin: .5rem 0 0; color: rgba(239,230,212,.64); font-family: "Iowan Old Style",Georgia,serif; line-height: 1.65; }
-.hallFaqList a { width: fit-content; margin-top: .5rem; color: var(--ed-brass); font-size: .48rem; letter-spacing: .14em; text-transform: uppercase; }
+.hallFaqList a { display: inline-flex; width: fit-content; min-height: 2.75rem; align-items: center; margin-top: .5rem; color: var(--ed-brass); font-size: .48rem; letter-spacing: .14em; text-transform: uppercase; }
 
 .hallClosing { padding: clamp(6rem,10vw,11rem) clamp(1.25rem,7vw,8rem); background: #c79a52; color: #071310; }
 .hallClosing h2 { margin: 1.5rem 0 2rem; font-size: clamp(5rem,10vw,11rem); }

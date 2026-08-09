@@ -1,6 +1,7 @@
 import { hasOrderAccess } from "../../../lib/order-access";
 import { getOrder } from "../../../lib/order-store";
 import { inferPaymentStatus, orderStatusLabels } from "../../../lib/orders";
+import { reconcileOrderPayment } from "../../../lib/payments/reconciliation";
 import { checkRateLimit, getClientAddress, isValidOrderId, noStoreJson } from "../../../lib/security";
 
 export const runtime = "nodejs";
@@ -14,8 +15,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     response.headers.set("Retry-After", String(rate.retryAfterSeconds));
     return response;
   }
-  const order = await getOrder(id);
+  let order = await getOrder(id);
   if (!order) return noStoreJson({ error: "Order not found." }, { status: 404 });
+  if (["pending", "failed"].includes(inferPaymentStatus(order))) {
+    try {
+      if (await reconcileOrderPayment(order)) order = await getOrder(id) || order;
+    } catch (error) {
+      console.error("Payment reconciliation lookup failed.", error instanceof Error ? error.name : "UnknownError");
+    }
+  }
   return noStoreJson({
     id: order.id,
     status: order.status,

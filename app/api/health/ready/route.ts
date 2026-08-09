@@ -1,12 +1,24 @@
-import { isAdminConfigured } from "../../../lib/admin-auth";
+import { timingSafeEqual } from "node:crypto";
+import { getAdminSession, isAdminConfigured } from "../../../lib/admin-auth";
 import { checkDurableOrderStorage, isDurableOrderStorageConfigured } from "../../../lib/order-store";
 import { isProductionOrderAccessConfigured } from "../../../lib/order-access";
 import { isStripeConfigured } from "../../../lib/payments/stripe";
-import { isWorldpayCheckoutEnabled } from "../../../lib/payments/worldpay";
+import { isWorldpayProductionReady } from "../../../lib/payments/worldpay";
 import { checkRateLimit, getClientAddress, noStoreJson } from "../../../lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// The individual checks describe which secrets and providers are missing, which is a
+// map of the weakest part of the deployment. Only an administrator session or the
+// monitoring token may read them; everyone else sees ready or not ready.
+async function mayReadDetail(request: Request) {
+  const token = process.env.HEALTH_CHECK_TOKEN?.trim();
+  const presented = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (token && token.length >= 24 && presented.length === token.length
+    && timingSafeEqual(Buffer.from(presented), Buffer.from(token))) return true;
+  return Boolean(await getAdminSession());
+}
 
 export async function GET(request: Request) {
   const rate = checkRateLimit("readiness", getClientAddress(request), 60, 60_000);
@@ -26,8 +38,10 @@ export async function GET(request: Request) {
     durableStorage: storageConfigured && storageReachable,
     orderAccessSigning: isProductionOrderAccessConfigured(),
     administratorAccess: isAdminConfigured(),
-    paymentProvider: isStripeConfigured() || isWorldpayCheckoutEnabled(),
+    paymentProvider: isStripeConfigured() || isWorldpayProductionReady(),
   };
   const ready = Object.values(checks).every(Boolean);
-  return noStoreJson({ status: ready ? "ready" : "not_ready", checks, time: new Date().toISOString() }, { status: ready ? 200 : 503 });
+  const body: Record<string, unknown> = { status: ready ? "ready" : "not_ready", time: new Date().toISOString() };
+  if (await mayReadDetail(request)) body.checks = checks;
+  return noStoreJson(body, { status: ready ? 200 : 503 });
 }

@@ -9,8 +9,6 @@ export function GET() {
   return noStoreJson({
     stripe: isStripeConfigured(),
     worldpay: isWorldpayCheckoutEnabled(),
-    worldpayCheckoutId: process.env.NEXT_PUBLIC_WORLDPAY_CHECKOUT_ID || "",
-    worldpayEnvironment: process.env.WORLDPAY_ENVIRONMENT === "live" ? "live" : "try",
     deliveryFeePence: getDeliveryFeePence(),
   });
 }

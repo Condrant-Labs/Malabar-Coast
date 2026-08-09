@@ -4,18 +4,33 @@ import { getAllowedAdminTransitions, resolvePaymentTransition, type OrderRecord,
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const dataFile = path.join(dataDirectory, "orders.json");
+const ORDER_DATABASE_CONTRACT_VERSION = "2026-08-09-hosted-payments-v2";
 let writeQueue: Promise<void> = Promise.resolve();
 
+function supabaseUrl() {
+  return process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+
+function supabaseServerKey() {
+  return process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
+
 function hasSupabase() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(supabaseUrl() && supabaseServerKey());
 }
 
 async function supabaseRequest(pathname: string, init: RequestInit) {
-  const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/${pathname}`, {
+  const url = supabaseUrl();
+  const key = supabaseServerKey();
+  if (!url || !key) throw new Error("Order database is not configured.");
+  const response = await fetch(`${url}/rest/v1/${pathname}`, {
     ...init,
+    signal: init.signal ?? AbortSignal.timeout(10_000),
     headers: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: key,
+      // Current sb_secret keys belong only in `apikey`; legacy service-role JWTs
+      // must also be supplied as the bearer token expected by PostgREST.
+      ...(!key.startsWith("sb_secret_") ? { Authorization: `Bearer ${key}` } : {}),
       "Content-Type": "application/json",
       Prefer: "return=representation",
       ...init.headers,
@@ -98,8 +113,8 @@ export function isDurableOrderStorageConfigured() {
 export async function checkDurableOrderStorage() {
   if (!hasSupabase()) return false;
   try {
-    await supabaseRequest("orders?select=id&limit=1", { method: "GET", headers: { Prefer: "return=minimal" } });
-    return true;
+    const health = await supabaseRpc<{ version?: string }>("order_database_health", {});
+    return health.version === ORDER_DATABASE_CONTRACT_VERSION;
   } catch {
     return false;
   }
@@ -118,12 +133,92 @@ export async function listOrders(limit = 100): Promise<OrderRecord[]> {
     .slice(0, safeLimit);
 }
 
-export async function attachCheckoutProviderReference(id: string, provider: PaymentProvider, providerReference: string, providerCheckoutUrl?: string) {
+export type OrderListOptions = {
+  limit?: number;
+  offset?: number;
+  from?: string;
+  to?: string;
+  statuses?: OrderStatus[];
+  fulfilment?: "collection" | "delivery";
+  provider?: PaymentProvider;
+};
+
+export async function listOrdersPage(options: OrderListOptions = {}): Promise<OrderRecord[]> {
+  const limit = Math.min(1_000, Math.max(1, Math.floor(options.limit ?? 100)));
+  const offset = Math.max(0, Math.floor(options.offset ?? 0));
+  if (hasSupabase()) {
+    const query = new URLSearchParams({
+      select: "data",
+      order: "created_at.desc",
+      limit: String(limit),
+      offset: String(offset),
+    });
+    if (options.from) query.set("created_at", `gte.${options.from}`);
+    if (options.to) query.append("created_at", `lt.${options.to}`);
+    if (options.statuses?.length) query.set("status", `in.(${options.statuses.join(",")})`);
+    if (options.fulfilment) query.set("data->>fulfilment", `eq.${options.fulfilment}`);
+    if (options.provider) query.set("provider", `eq.${options.provider}`);
+    const response = await supabaseRequest(`orders?${query}`, { method: "GET" });
+    const rows = await response.json() as { data: OrderRecord }[];
+    return rows.map((row) => row.data);
+  }
+
+  return (await readLocalOrders())
+    .filter((order) => !options.from || order.createdAt >= options.from)
+    .filter((order) => !options.to || order.createdAt < options.to)
+    .filter((order) => !options.statuses?.length || options.statuses.includes(order.status))
+    .filter((order) => !options.fulfilment || order.fulfilment === options.fulfilment)
+    .filter((order) => !options.provider || order.provider === options.provider)
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(offset, offset + limit);
+}
+
+export async function listOrdersForReport(
+  from?: string,
+  to?: string,
+  filters: Pick<OrderListOptions, "statuses" | "fulfilment" | "provider"> = {},
+): Promise<OrderRecord[]> {
+  const orders: OrderRecord[] = [];
+  const pageSize = 1_000;
+  // PostgREST installations commonly cap a response at 1,000 rows. Page explicitly
+  // so monthly and annual reports do not silently under-count a busy restaurant.
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await listOrdersPage({ limit: pageSize, offset, from, to, ...filters });
+    orders.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return orders;
+}
+
+export async function updateOrderAdminNotes(id: string, adminNotes: string) {
+  if (hasSupabase()) {
+    return supabaseRpc<OrderRecord | null>("update_order_admin_notes", {
+      p_order_id: id,
+      p_admin_notes: adminNotes,
+    });
+  }
+
+  let result: OrderRecord | null = null;
+  writeQueue = writeQueue.then(async () => {
+    const orders = await readLocalOrders();
+    const index = orders.findIndex((order) => order.id === id);
+    if (index < 0) return;
+    const now = new Date().toISOString();
+    result = { ...orders[index], adminNotes, updatedAt: now };
+    orders[index] = result;
+    await writeLocalOrders(orders);
+  });
+  await writeQueue;
+  return result;
+}
+
+export async function attachCheckoutProviderReference(id: string, provider: PaymentProvider, providerReference?: string, providerCheckoutUrl?: string) {
+  if (!providerReference && !providerCheckoutUrl) throw new Error("Provider checkout identity is missing.");
   if (hasSupabase()) {
     return supabaseRpc<OrderRecord | null>("attach_checkout_provider_reference", {
       p_order_id: id,
       p_provider: provider,
-      p_provider_reference: providerReference,
+      p_provider_reference: providerReference || null,
       p_provider_checkout_url: providerCheckoutUrl || null,
     });
   }
@@ -134,11 +229,12 @@ export async function attachCheckoutProviderReference(id: string, provider: Paym
     const index = orders.findIndex((order) => order.id === id && order.provider === provider);
     if (index < 0) return;
     const current = orders[index];
-    if (current.providerReference && current.providerReference !== providerReference) return;
+    if (current.providerReference && providerReference && current.providerReference !== providerReference) return;
+    if (current.providerCheckoutUrl && providerCheckoutUrl && current.providerCheckoutUrl !== providerCheckoutUrl) return;
     const now = new Date().toISOString();
     result = {
       ...current,
-      providerReference,
+      providerReference: providerReference || current.providerReference,
       providerCheckoutUrl: providerCheckoutUrl || current.providerCheckoutUrl,
       updatedAt: now,
     };
@@ -211,7 +307,7 @@ export async function applyPaymentEvent(input: {
     if (current.providerReference && input.providerReference && current.providerReference !== input.providerReference) return;
     if (input.amountPence !== undefined && input.amountPence !== current.totalPence) return;
     if (input.currency && input.currency.toUpperCase() !== current.currency) return;
-    const identityRequired = input.provider === "stripe" && ["paid", "partially_refunded", "refunded", "disputed", "reversed"].includes(input.paymentStatus);
+    const identityRequired = ["paid", "partially_refunded", "refunded", "disputed", "reversed"].includes(input.paymentStatus);
     if (identityRequired && (!input.providerReference || input.amountPence !== current.totalPence || input.currency?.toUpperCase() !== current.currency)) return;
     const now = new Date().toISOString();
     const transition = resolvePaymentTransition(current, input.paymentStatus);

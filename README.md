@@ -44,6 +44,19 @@ public/         Static assets (images, robots.txt, sitemap, manifest)
 supabase/       Database schema
 ```
 
+## Restaurant operations portal
+
+The private portal begins at `/admin` and includes:
+
+- a live overview of confirmed sales, orders due and kitchen workload;
+- a complete searchable order register with payment-safe status advancement;
+- a kitchen board for new, accepted, making, ready and delivery stages;
+- daily collection, monthly sales, order-mix and dish-performance reporting;
+- per-order customer, basket, audit history and staff-only operations notes; and
+- a read-only deployment and security readiness page.
+
+Run the current `supabase/schema.sql` before deploying the matching application build. The portal uses a server-only Supabase secret key (or legacy service-role key) and never connects a browser directly to the orders table.
+
 ## Documentation
 
 - [PAYMENTS.md](./PAYMENTS.md) — orders, Stripe, and Worldpay integration notes

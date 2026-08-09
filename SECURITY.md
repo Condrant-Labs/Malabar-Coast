@@ -3,18 +3,25 @@
 ## Trust boundaries
 
 - Menu IDs and quantities are accepted from the browser; names, availability, prices and totals are rebuilt on the server.
-- Stripe and Worldpay secrets, webhook credentials and the Supabase service-role key are server-only.
-- Customer order pages and `/api/orders/[id]` require a signed HTTP-only order-access cookie.
-- `/admin` requires a signed eight-hour administrator session. Status updates also require a same-origin request and a session-bound CSRF token.
-- Payment state can only be applied through authenticated provider events or a Stripe Checkout Session verified directly with Stripe.
+- Stripe and Worldpay secrets, webhook credentials and the Supabase secret/service-role key are server-only.
+- Customer order pages and `/api/orders/[id]` require a signed HTTP-only order-access cookie. The cookie carries the ten most recent orders from that browser, so a second checkout no longer revokes access to the first.
+- `/admin` requires a signed eight-hour administrator session. Status updates also require a same-origin request and a session-bound CSRF token. The session is bound to a digest of the configured username and password hash, so rotating either one invalidates every issued session immediately.
+- Payment state can only be applied through authenticated provider events or a provider payment/session verified directly with Stripe or Worldpay.
+- Rate limiting reads the client address from the right of `x-forwarded-for`, after `TRUSTED_PROXY_COUNT` hops, or from an edge header the platform overwrites. Reading the left-most entry would let any client forge an address and reset every bucket. Set `TRUSTED_PROXY_COUNT` to match the deployment.
 
 ## Response protection
 
-`next.config.ts` applies a restrictive Content Security Policy, clickjacking protection, MIME sniffing protection, HTTPS transport policy, limited browser permissions and strict referrer handling. Admin, order, checkout and API routes also receive no-store and no-index headers.
+`proxy.ts` issues the Content Security Policy with a per-request nonce. `'strict-dynamic'` lets the nonce-approved bootstrap load the application chunks and the Worldpay SDK. The policy retains `'unsafe-inline'` only as a legacy fallback; nonce-aware browsers ignore it when the nonce is present. `next.config.ts` adds clickjacking protection, MIME sniffing protection, HTTPS transport policy, limited browser permissions and strict referrer handling. Do not also set a policy in `next.config.ts`: two policies are both enforced and the intersection breaks the page.
+
+Admin, order, checkout and API routes receive no-index headers from `next.config.ts` and `Cache-Control: no-store` from `proxy.ts`. The header is reapplied there because Next.js replaces a configured `no-store` with `no-cache, must-revalidate` when it renders a dynamic page, which would leave pages containing customer contact details and addresses eligible for the browser disk cache. `next dev` still reports `no-cache` for its own reasons; verify this header against `next build && next start`.
 
 ## Payment event integrity
 
-`supabase/schema.sql` owns all state-changing order invariants. `create_checkout_order` atomically claims a unique idempotency digest, `attach_checkout_provider_reference` binds the provider identity without stale JSON replacement, `transition_order_status` row-locks administrator changes, and `apply_order_payment_event` deduplicates and validates provider reference, amount and currency. Run the current schema before enabling the matching production build. Webhooks fail closed when authentication, provider verification or a database function is missing.
+Worldpay Hosted Payment Pages keep card data and 3DS outside this application. Event signatures are verified as HMAC-SHA256 against the untouched request body before JSON parsing. Worldpay event types are matched against an explicit table rather than by substring. An event type this release does not know is logged and ignored so it can never be guessed into a terminal state.
+
+Worldpay creates its payment ID only after the customer submits the hosted page. The checkout URL is stored without inventing a provider reference; the first signed event or authenticated Payment Queries result atomically binds the real payment ID. Stripe Checkout creates its session ID before redirect and binds it immediately. Both reconciliation paths require the provider reference, order identity, amount and currency before paid or another irreversible state can be applied.
+
+`supabase/schema.sql` owns all state-changing order invariants. `order_database_health` versions the required migration for readiness checks, `create_checkout_order` atomically claims a unique idempotency digest, `attach_checkout_provider_reference` binds the provider identity without stale JSON replacement, `transition_order_status` row-locks administrator changes, `update_order_admin_notes` changes only the bounded private note field, and `apply_order_payment_event` deduplicates and validates provider reference, amount and currency. Run the current schema before enabling the matching production build. Webhooks fail closed when authentication, provider verification or a database function is missing.
 
 Refunded, disputed, partially refunded and reversed payments cannot advance through fulfilment. Late `paid` duplicates cannot reopen these irreversible states.
 
@@ -29,19 +36,23 @@ Collection orders omit the delivery step.
 - Use a final HTTPS `NEXT_PUBLIC_SITE_URL`; never rely on the request Host header for payment returns.
 - Configure Supabase and run the current schema. Production checkout must not use local JSON storage.
 - Configure Stripe test keys and signed webhooks, then test paid, asynchronous, failed and expired sessions.
-- Keep Worldpay disabled until the merchant-specific 3DS continuation has passed provider testing.
+- Keep Worldpay disabled until Hosted Payment Pages, signed events and Payment Queries reconciliation have passed Try testing.
 - Generate separate high-entropy values for `ADMIN_SESSION_SECRET` and `ORDER_ACCESS_SECRET`.
 - Store all secrets in the deployment secret manager, not source control or public variables.
 - Apply platform/WAF throttling to `/api/checkout`, `/api/orders/*`, `/api/admin/*` and both webhook paths.
 - Confirm refunds, delivery radius, operating hours, lead times, minimum order and privacy/retention policy before launch.
+- Replace the footer's policy placeholders with owner-approved privacy, cookie, payment, cancellation and refund pages before accepting live orders.
 - Configure monitoring for checkout failures, webhook failures and repeated administrator login rejection.
-- Back up Supabase and define an order/customer-data retention and deletion schedule.
+- Back up Supabase and schedule `public.redact_old_order_personal_data(365)`. Customer name, email, phone, delivery address and order note are stored inside `orders.data` and are otherwise kept for the life of the project; the function clears them from settled orders past the window while keeping the reference, basket, totals and payment audit trail.
+- Set `TRUSTED_PROXY_COUNT` to the number of proxies that append to `x-forwarded-for`, and `HEALTH_CHECK_TOKEN` if an uptime monitor needs the individual readiness checks.
 
 ## Verification before each release
 
 1. Run `pnpm test`, `pnpm lint`, `pnpm audit --prod` and `pnpm build`.
-2. Inspect headers on `/`, `/checkout`, `/order/test`, `/admin/login` and `/api/payment-config`.
-3. Confirm private routes return `X-Robots-Tag` and `Cache-Control: no-store`.
-4. Confirm unsigned Stripe and Worldpay webhook requests are rejected.
-5. Confirm order status is unavailable without its signed cookie.
-6. Confirm an administrator cannot skip fulfilment steps or establish payment manually.
+2. Inspect headers on `/`, `/checkout`, `/order/test`, `/admin/login` and `/api/payment-config`, against `next start` rather than `next dev`.
+3. Confirm private routes return `X-Robots-Tag` and `Cache-Control: no-store`, and that `script-src` carries a fresh `nonce-` value with `'strict-dynamic'`; `'unsafe-inline'` may appear only as the documented legacy fallback.
+4. Confirm the browser console reports no CSP violation on `/`, `/menu`, `/story` and `/checkout`.
+5. Confirm unsigned Stripe and Worldpay webhook requests are rejected.
+6. Confirm order status is unavailable without its signed cookie.
+7. Confirm an administrator cannot skip fulfilment steps or establish payment manually.
+8. Confirm `/api/health/ready` returns no `checks` object without an administrator session or `HEALTH_CHECK_TOKEN`.

@@ -1,5 +1,6 @@
-import { applyPaymentEvent } from "../order-store";
+import { applyPaymentEvent, getOrder } from "../order-store";
 import { inferPaymentStatus, type OrderRecord } from "../orders";
+import { publishPaymentCompletionEvent } from "../publishEvent";
 import { retrieveStripeCheckoutSession, stripeSessionMatchesOrder } from "./stripe";
 import { retrieveWorldpayPaymentForOrder } from "./worldpay";
 
@@ -18,7 +19,7 @@ export async function reconcileOrderPayment(order: OrderRecord) {
         ? "expired"
         : undefined;
     if (!paymentStatus || session.amount_total === undefined || !session.currency) return false;
-    return applyPaymentEvent({
+    const applied =  await applyPaymentEvent({
       provider: "stripe",
       eventId: `query:${session.id}:${session.payment_status || "unknown"}:${session.status || "unknown"}`,
       orderId: order.id,
@@ -28,9 +29,19 @@ export async function reconcileOrderPayment(order: OrderRecord) {
       amountPence: session.amount_total,
       currency: session.currency,
     });
+    if (paymentStatus==="paid" && applied && inferPaymentStatus(order)!=="paid") {
+      const updatedOrder = await getOrder(order.id)
+      if (updatedOrder) await publishPaymentCompletionEvent(updatedOrder);
+    }
+    return applied;
   }
 
   const payment = await retrieveWorldpayPaymentForOrder(order);
   if (!payment) return false;
-  return applyPaymentEvent({ provider: "worldpay", orderId: order.id, ...payment });
+  const applied = await applyPaymentEvent({ provider: "worldpay", orderId: order.id, ...payment });
+  if (applied && payment.paymentStatus === "paid" && inferPaymentStatus(order)!=="paid"){
+    const updatedOrder = await getOrder(order.id);
+    if (updatedOrder) await publishPaymentCompletionEvent(updatedOrder);
+  }
+  return applied;
 }

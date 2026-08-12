@@ -1,22 +1,18 @@
 import { getSupabaseChannelClient } from "./config/supabase_channel";
-import type { OrderRecord } from "./orders";
 
-export async function publishPaymentCompletionEvent(order:OrderRecord){
-    const supabase = getSupabaseChannelClient();
-    const channel = supabase.channel("payments");
-    try{
-        const result = await channel.send({
-        type:"broadcast",
-        event:"payment-completed",
-        payload:{
-            orderId: order.id,
-            createdAt:order.createdAt
-        }
-    })
-    if (result !== "ok") {
-      throw new Error(`Could not publish payment-completed event: ${result}`);
+export async function publishPaymentCompletionEvent(orderId: string) {
+  const supabase = getSupabaseChannelClient();
+  const channel = supabase.channel("admin-orders");
+  try {
+    const result = await channel.httpSend("orders-changed", {
+      orderId,
+      changedAt: new Date().toISOString(),
+    });
+
+    if (!result.success) {
+      throw new Error(`Could not publish payment-completed event: ${result.error}`);
     }
-    } finally{
-        void supabase.removeChannel(channel);
-    }
+  } finally {
+    void supabase.removeChannel(channel);
+  }
 }

@@ -4,7 +4,8 @@ import { getAdminSession } from "../lib/admin-auth";
 import { activeOrderStatuses, getReportRange, money, requestedToday, summariseOrders } from "../lib/admin-reporting";
 import { listOrdersForReport, listOrdersPage } from "../lib/order-store";
 import { orderStatusLabels } from "../lib/orders";
-import { AdminFrame, AdminPageHeader, MetricCard, OrderTable, StatusBadge } from "./components/admin-ui";
+import { AdminFrame, AdminPageHeader, MetricCard, StatusBadge } from "./components/admin-ui";
+import { LiveRecentOrders } from "./components/live-recent-orders";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,8 @@ export default async function AdminPage() {
   const report = summariseOrders(reportingOrders);
   const todayOrders = recentOrders.filter((order) => requestedToday(order));
   const flow = ["paid", "confirmed", "preparing", "ready", "out_for_delivery"] as const;
+  const realtimeUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const realtimePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 
   return <AdminFrame active="/admin" csrfToken={session.csrfToken}>
     <AdminPageHeader
@@ -52,7 +55,12 @@ export default async function AdminPage() {
 
     <section className="adminPanel">
       <div className="adminPanelHeading"><div><p>Latest activity</p><h2>Recent orders</h2></div><Link href="/admin/orders">View every order</Link></div>
-      <OrderTable orders={recentOrders.slice(0, 8)} csrfToken={session.csrfToken} returnTo="/admin" />
+      <LiveRecentOrders
+        initialOrders={recentOrders.slice(0, 8)}
+        csrfToken={session.csrfToken}
+        supabaseUrl={realtimeUrl}
+        publishableKey={realtimePublishableKey}
+      />
     </section>
   </AdminFrame>;
 }

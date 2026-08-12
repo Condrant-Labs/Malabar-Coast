@@ -4,6 +4,7 @@ import { getAdminSession } from "../../lib/admin-auth";
 import { listOrdersForReport } from "../../lib/order-store";
 import { orderStatusLabels, type OrderStatus } from "../../lib/orders";
 import { AdminFrame, AdminPageHeader, OrderTable } from "../components/admin-ui";
+import { RealtimePageRefresh } from "../components/realtime-page-refresh";
 
 export const dynamic = "force-dynamic";
 const pageSize = 25;
@@ -42,9 +43,11 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     params.set("page", String(page));
     return `/admin/orders?${params}`;
   };
+  const realtimeUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const realtimePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 
   return <AdminFrame active="/admin/orders" csrfToken={session.csrfToken}>
-    <AdminPageHeader eyebrow="Order management" title="Every order, under control." description="Search customer and dish details, isolate exceptions, and advance paid orders without leaving the list." actions={<Link className="adminButton" href="/admin/kitchen">Kitchen board</Link>} />
+    <AdminPageHeader eyebrow="Order management" title="Every order, under control." description="Search customer and dish details, isolate exceptions, and advance paid orders without leaving the list." actions={<><RealtimePageRefresh supabaseUrl={realtimeUrl} publishableKey={realtimePublishableKey} /><Link className="adminButton" href="/admin/kitchen">Kitchen board</Link></>} />
     <section className="adminPanel adminFilterPanel">
       <form method="get" action="/admin/orders" className="adminFilters">
         <label className="adminSearchField"><span>Search</span><input name="q" defaultValue={q} placeholder="Order, customer, email, phone or dish" /></label>

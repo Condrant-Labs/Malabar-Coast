@@ -63,8 +63,7 @@ export async function POST(request: Request) {
     });
     if (!applied) console.warn("Rejected a Worldpay event that did not match its stored order.", eventId);
     if (applied && paymentStatus==="paid" && orderBefore && inferPaymentStatus(orderBefore)!=="paid"){
-      const updatedOrder = await getOrder(orderId);
-      if (updatedOrder) await publishPaymentCompletionEvent(updatedOrder)
+      await publishPaymentCompletionEvent(orderId);
     }
   }
   return noStoreJson({ received: true });

@@ -115,8 +115,7 @@ export async function POST(request: Request) {
       currency: session.currency,
     });
     if (applied && paymentStatus==="paid" && inferPaymentStatus(order) !== "paid"){
-      const updatedOrder = await getOrder(orderId);
-      if (updatedOrder) await publishPaymentCompletionEvent(updatedOrder);
+      await publishPaymentCompletionEvent(orderId);
     }
   }
   return noStoreJson({ received: true });

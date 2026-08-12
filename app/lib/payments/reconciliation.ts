@@ -1,4 +1,4 @@
-import { applyPaymentEvent, getOrder } from "../order-store";
+import { applyPaymentEvent } from "../order-store";
 import { inferPaymentStatus, type OrderRecord } from "../orders";
 import { publishPaymentCompletionEvent } from "../publishEvent";
 import { retrieveStripeCheckoutSession, stripeSessionMatchesOrder } from "./stripe";
@@ -30,8 +30,7 @@ export async function reconcileOrderPayment(order: OrderRecord) {
       currency: session.currency,
     });
     if (paymentStatus==="paid" && applied && inferPaymentStatus(order)!=="paid") {
-      const updatedOrder = await getOrder(order.id)
-      if (updatedOrder) await publishPaymentCompletionEvent(updatedOrder);
+      await publishPaymentCompletionEvent(order.id);
     }
     return applied;
   }
@@ -40,8 +39,7 @@ export async function reconcileOrderPayment(order: OrderRecord) {
   if (!payment) return false;
   const applied = await applyPaymentEvent({ provider: "worldpay", orderId: order.id, ...payment });
   if (applied && payment.paymentStatus === "paid" && inferPaymentStatus(order)!=="paid"){
-    const updatedOrder = await getOrder(order.id);
-    if (updatedOrder) await publishPaymentCompletionEvent(updatedOrder);
+    await publishPaymentCompletionEvent(order.id);
   }
   return applied;
 }

@@ -2,6 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const privatePathPrefixes = ["/admin", "/order", "/checkout", "/api"];
 
+function supabaseConnectSources() {
+  const configured = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!configured) return "";
+
+  try {
+    const url = new URL(configured);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return "";
+    const websocketProtocol = url.protocol === "https:" ? "wss:" : "ws:";
+    return ` ${url.origin} ${websocketProtocol}//${url.host}`;
+  } catch {
+    return "";
+  }
+}
+
 // The Content Security Policy is issued here rather than in next.config.ts so every
 // document carries a fresh nonce. Next.js reads the policy from the request header
 // below and stamps the same nonce onto its own inline bootstrap scripts, which lets
@@ -21,7 +35,7 @@ export default function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://www.google.com https://maps.gstatic.com https://*.googleusercontent.com",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    `connect-src 'self'${supabaseConnectSources()}`,
     "frame-src 'self' https://www.google.com https://maps.google.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",

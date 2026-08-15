@@ -1,17 +1,19 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import type { AdminSession } from "../../lib/admin-auth";
+import { adminCan, adminRoleLabels, type AdminPermission } from "../../lib/admin-permissions";
 import { getAllowedAdminTransitions, orderStatusLabels, type OrderRecord, type OrderStatus } from "../../lib/orders";
 import { displayDate, money } from "../../lib/admin-reporting";
 
 const navigation = [
-  { href: "/admin", label: "Overview", mark: "01" },
-  { href: "/admin/orders", label: "Orders", mark: "02" },
-  { href: "/admin/kitchen", label: "Kitchen", mark: "03" },
-  { href: "/admin/reports", label: "Reports", mark: "04" },
-  { href: "/admin/settings", label: "System", mark: "05" },
-];
+  { href: "/admin", label: "Overview", mark: "01", permission: "dashboard:read" },
+  { href: "/admin/orders", label: "Orders", mark: "02", permission: "orders:read" },
+  { href: "/admin/kitchen", label: "Kitchen", mark: "03", permission: "kitchen:read" },
+  { href: "/admin/reports", label: "Reports", mark: "04", permission: "reports:read" },
+  { href: "/admin/settings", label: "System", mark: "05", permission: "settings:read" },
+] satisfies { href: string; label: string; mark: string; permission: AdminPermission }[];
 
-export function AdminFrame({ active, csrfToken, children }: { active: string; csrfToken: string; children: ReactNode }) {
+export function AdminFrame({ active, session, children }: { active: string; session: AdminSession; children: ReactNode }) {
   return (
     <main className="adminShell adminPortal">
       <aside className="adminSidebar">
@@ -19,16 +21,16 @@ export function AdminFrame({ active, csrfToken, children }: { active: string; cs
           <span>MC</span><div><strong>Malabar Coast</strong><small>Restaurant operations</small></div>
         </Link>
         <nav aria-label="Administration">
-          {navigation.map((item) => (
+          {navigation.filter((item) => adminCan(session.role, item.permission)).map((item) => (
             <Link key={item.href} href={item.href} className={active === item.href ? "isActive" : undefined}>
               <span>{item.mark}</span>{item.label}
             </Link>
           ))}
         </nav>
         <div className="adminSidebarFooter">
-          <div><i aria-hidden="true" /><span><strong>Secure session</strong><small>Private operations</small></span></div>
+          <div><i aria-hidden="true" /><span><strong>{session.displayName}</strong><small>{adminRoleLabels[session.role]}</small></span></div>
           <form action="/api/admin/logout" method="post">
-            <input type="hidden" name="csrf" value={csrfToken} />
+            <input type="hidden" name="csrf" value={session.csrfToken} />
             <button type="submit">Sign out</button>
           </form>
         </div>
@@ -86,4 +88,3 @@ export function OrderTable({ orders, csrfToken, returnTo = "/admin/orders" }: { 
     </div>
   );
 }
-

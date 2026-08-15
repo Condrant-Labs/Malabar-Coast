@@ -19,8 +19,7 @@ set
 where idempotency_key_hash is null or request_fingerprint is null;
 
 create index if not exists orders_status_created_at_idx on public.orders (status, created_at desc);
--- The administrator dashboard reads the newest orders without a status filter, which the
--- composite index above cannot serve.
+
 create index if not exists orders_created_at_idx on public.orders (created_at desc);
 -- Support lookups by customer contact, without exposing a separate PII column.
 create index if not exists orders_customer_email_idx on public.orders ((lower(data->'customer'->>'email')));
@@ -28,9 +27,6 @@ create unique index if not exists orders_idempotency_key_hash_uidx
   on public.orders (idempotency_key_hash)
   where idempotency_key_hash is not null;
 
--- The application only ever writes these values through the functions below, but the
--- constraints keep a mistaken direct write or a future migration from inventing a status
--- that the fulfilment and payment state machines do not recognise.
 do $$ begin
   alter table public.orders add constraint orders_status_check check (status in (
     'pending_payment', 'paid', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed',
@@ -51,9 +47,6 @@ exception when duplicate_object then null; end $$;
 
 alter table public.orders enable row level security;
 
--- No public policies are intentional. Only the server-side service role may read or write
--- orders, and the grants are removed so a future policy cannot accidentally expose the
--- customer contact details, address and basket held in `data`.
 revoke all on table public.orders from anon, authenticated;
 
 create table if not exists public.order_payment_events (
@@ -92,8 +85,200 @@ exception when duplicate_object then null; end $$;
 alter table public.order_payment_events enable row level security;
 revoke all on table public.order_payment_events from anon, authenticated;
 
--- Claims one idempotency key exactly once. Concurrent callers either receive the
--- same order or a conflict and cannot create a second provider checkout.
+-- Supabase Auth owns credentials and identity. This profile table owns only the
+-- application authorization decision. New Auth users start inactive and cannot
+-- enter the operations portal until an owner explicitly assigns and activates a role.
+create table if not exists public.admin_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  display_name text not null,
+  role text not null default 'viewer',
+  is_active boolean not null default false,
+  session_version integer not null default 1,
+  last_login_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references auth.users(id) on delete set null
+);
+
+alter table public.admin_profiles add column if not exists email text;
+alter table public.admin_profiles add column if not exists display_name text;
+alter table public.admin_profiles add column if not exists role text not null default 'viewer';
+alter table public.admin_profiles add column if not exists is_active boolean not null default false;
+alter table public.admin_profiles add column if not exists session_version integer not null default 1;
+alter table public.admin_profiles add column if not exists last_login_at timestamptz;
+alter table public.admin_profiles add column if not exists created_at timestamptz not null default now();
+alter table public.admin_profiles add column if not exists updated_at timestamptz not null default now();
+alter table public.admin_profiles add column if not exists created_by uuid references auth.users(id) on delete set null;
+
+create unique index if not exists admin_profiles_email_uidx on public.admin_profiles ((lower(email)));
+create index if not exists admin_profiles_active_role_idx on public.admin_profiles (is_active, role);
+
+do $$ begin
+  alter table public.admin_profiles add constraint admin_profiles_role_check
+    check (role in ('owner', 'admin', 'manager', 'kitchen', 'viewer'));
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.admin_profiles add constraint admin_profiles_session_version_check
+    check (session_version >= 1);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.admin_profiles add constraint admin_profiles_display_name_check
+    check (char_length(display_name) between 1 and 100);
+exception when duplicate_object then null; end $$;
+
+alter table public.admin_profiles enable row level security;
+revoke all on table public.admin_profiles from anon, authenticated;
+
+create table if not exists public.admin_audit_log (
+  id bigint generated always as identity primary key,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  actor_email text not null,
+  actor_role text not null,
+  action text not null,
+  target_type text not null,
+  target_id text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists admin_audit_log_actor_created_idx on public.admin_audit_log (actor_user_id, created_at desc);
+create index if not exists admin_audit_log_target_created_idx on public.admin_audit_log (target_type, target_id, created_at desc);
+create index if not exists admin_audit_log_action_created_idx on public.admin_audit_log (action, created_at desc);
+
+do $$ begin
+  alter table public.admin_audit_log add constraint admin_audit_log_actor_role_check
+    check (actor_role in ('owner', 'admin', 'manager', 'kitchen', 'viewer'));
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.admin_audit_log add constraint admin_audit_log_action_check
+    check (action ~ '^[a-z][a-z0-9_.-]{2,79}$');
+exception when duplicate_object then null; end $$;
+
+alter table public.admin_audit_log enable row level security;
+revoke all on table public.admin_audit_log from anon, authenticated;
+
+create table if not exists public.app_schema_versions (
+  version text primary key,
+  description text not null,
+  applied_at timestamptz not null default now()
+);
+
+alter table public.app_schema_versions enable row level security;
+revoke all on table public.app_schema_versions from anon, authenticated;
+
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+revoke all on function public.touch_updated_at() from public;
+drop trigger if exists admin_profiles_touch_updated_at on public.admin_profiles;
+create trigger admin_profiles_touch_updated_at
+before update on public.admin_profiles
+for each row execute function public.touch_updated_at();
+
+create or replace function public.create_admin_profile_for_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is null or btrim(new.email) = '' then
+    return new;
+  end if;
+
+  insert into public.admin_profiles (user_id, email, display_name, role, is_active)
+  values (
+    new.id,
+    lower(coalesce(new.email, '')),
+    left(coalesce(nullif(new.raw_user_meta_data->>'display_name', ''), split_part(coalesce(new.email, 'Staff'), '@', 1)), 100),
+    'viewer',
+    false
+  )
+  on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+revoke all on function public.create_admin_profile_for_auth_user() from public;
+drop trigger if exists create_admin_profile_after_auth_user on auth.users;
+create trigger create_admin_profile_after_auth_user
+after insert on auth.users
+for each row execute function public.create_admin_profile_for_auth_user();
+
+-- Backfill existing Auth users as inactive viewers. Activation is always explicit.
+insert into public.admin_profiles (user_id, email, display_name, role, is_active)
+select
+  id,
+  lower(coalesce(email, '')),
+  left(coalesce(nullif(raw_user_meta_data->>'display_name', ''), split_part(coalesce(email, 'Staff'), '@', 1)), 100),
+  'viewer',
+  false
+from auth.users
+where email is not null
+on conflict (user_id) do nothing;
+
+create or replace function public.record_admin_login(p_actor_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor_email text;
+  actor_role text;
+begin
+  select email, role into actor_email, actor_role
+  from public.admin_profiles
+  where user_id = p_actor_user_id and is_active = true
+  for update;
+
+  if not found then raise exception 'Administrator is not active'; end if;
+
+  update public.admin_profiles set last_login_at = now() where user_id = p_actor_user_id;
+  insert into public.admin_audit_log (actor_user_id, actor_email, actor_role, action, target_type, target_id)
+  values (p_actor_user_id, actor_email, actor_role, 'auth.login', 'admin_profile', p_actor_user_id::text);
+end;
+$$;
+
+revoke all on function public.record_admin_login(uuid) from public;
+grant execute on function public.record_admin_login(uuid) to service_role;
+
+create or replace function public.record_admin_logout(p_actor_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor_email text;
+  actor_role text;
+begin
+  select email, role into actor_email, actor_role
+  from public.admin_profiles
+  where user_id = p_actor_user_id;
+
+  if not found then return; end if;
+  insert into public.admin_audit_log (actor_user_id, actor_email, actor_role, action, target_type, target_id)
+  values (p_actor_user_id, actor_email, actor_role, 'auth.logout', 'admin_profile', p_actor_user_id::text);
+end;
+$$;
+
+revoke all on function public.record_admin_logout(uuid) from public;
+grant execute on function public.record_admin_logout(uuid) to service_role;
+
 create or replace function public.create_checkout_order(
   p_id text,
   p_provider text,
@@ -155,9 +340,6 @@ $$;
 revoke all on function public.create_checkout_order(text, text, text, text, jsonb, timestamptz) from public;
 grant execute on function public.create_checkout_order(text, text, text, text, jsonb, timestamptz) to service_role;
 
--- Attaches hosted checkout navigation and, when the provider creates it before
--- redirect, its identity. Worldpay HPP creates the payment ID only after the
--- customer submits the hosted page, so a URL-only attachment is valid.
 create or replace function public.attach_checkout_provider_reference(
   p_order_id text,
   p_provider text,
@@ -215,15 +397,20 @@ $$;
 revoke all on function public.attach_checkout_provider_reference(text, text, text, text) from public;
 grant execute on function public.attach_checkout_provider_reference(text, text, text, text) to service_role;
 
--- Validates and advances fulfilment while holding the same order row lock used by
--- payment events, so an admin action can never overwrite a refund or reversal.
-create or replace function public.transition_order_status(p_order_id text, p_next_status text)
+-- Validates administrator role and advances fulfilment while holding the same order
+-- row lock used by payment events, so an admin action can never overwrite a refund
+-- or reversal. The audit insert is part of the same transaction as the order update.
+drop function if exists public.transition_order_status(text, text);
+drop function if exists public.transition_order_status(text, text, uuid);
+create function public.transition_order_status(p_order_id text, p_next_status text, p_actor_user_id uuid)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
+  actor_email text;
+  actor_role text;
   current_data jsonb;
   current_status text;
   current_payment text;
@@ -232,6 +419,15 @@ declare
   changed_at_iso text := to_char(changed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   recent_history jsonb;
 begin
+  select email, role into actor_email, actor_role
+  from public.admin_profiles
+  where user_id = p_actor_user_id and is_active = true
+  for share;
+
+  if not found or actor_role not in ('owner', 'admin', 'manager', 'kitchen') then
+    return null;
+  end if;
+
   select status, data into current_status, current_data
   from public.orders
   where id = p_order_id
@@ -273,32 +469,50 @@ begin
       'status', p_next_status,
       'updatedAt', changed_at_iso,
       'statusHistory', recent_history || jsonb_build_array(jsonb_build_object(
-        'status', p_next_status, 'at', changed_at_iso, 'actor', 'admin'
+        'status', p_next_status, 'at', changed_at_iso, 'actor', 'admin', 'actorUserId', p_actor_user_id
       ))
     )
   where id = p_order_id
   returning data into current_data;
 
+  insert into public.admin_audit_log (
+    actor_user_id, actor_email, actor_role, action, target_type, target_id, metadata
+  ) values (
+    p_actor_user_id, actor_email, actor_role, 'order.status.transition', 'order', p_order_id,
+    jsonb_build_object('from', current_status, 'to', p_next_status)
+  );
+
   return current_data;
 end;
 $$;
 
-revoke all on function public.transition_order_status(text, text) from public;
-grant execute on function public.transition_order_status(text, text) to service_role;
+revoke all on function public.transition_order_status(text, text, uuid) from public;
+grant execute on function public.transition_order_status(text, text, uuid) to service_role;
 
--- Stores private kitchen/operations notes without allowing staff to rewrite the
--- customer basket, totals, payment identity or audit history.
-create or replace function public.update_order_admin_notes(p_order_id text, p_admin_notes text)
+drop function if exists public.update_order_admin_notes(text, text);
+drop function if exists public.update_order_admin_notes(text, text, uuid);
+create function public.update_order_admin_notes(p_order_id text, p_admin_notes text, p_actor_user_id uuid)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
+  actor_email text;
+  actor_role text;
   current_data jsonb;
   changed_at timestamptz := now();
   changed_at_iso text := to_char(changed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 begin
+  select email, role into actor_email, actor_role
+  from public.admin_profiles
+  where user_id = p_actor_user_id and is_active = true
+  for share;
+
+  if not found or actor_role not in ('owner', 'admin', 'manager') then
+    return null;
+  end if;
+
   if p_admin_notes is null or length(p_admin_notes) > 2000 then
     raise exception 'Invalid administrator notes';
   end if;
@@ -313,15 +527,22 @@ begin
   where id = p_order_id
   returning data into current_data;
 
+  if current_data is not null then
+    insert into public.admin_audit_log (
+      actor_user_id, actor_email, actor_role, action, target_type, target_id, metadata
+    ) values (
+      p_actor_user_id, actor_email, actor_role, 'order.notes.update', 'order', p_order_id,
+      jsonb_build_object('length', char_length(p_admin_notes))
+    );
+  end if;
+
   return current_data;
 end;
 $$;
 
-revoke all on function public.update_order_admin_notes(text, text) from public;
-grant execute on function public.update_order_admin_notes(text, text) to service_role;
+revoke all on function public.update_order_admin_notes(text, text, uuid) from public;
+grant execute on function public.update_order_admin_notes(text, text, uuid) to service_role;
 
--- Remove the earlier six-argument overload before installing the identity-bound
--- event function. This prevents old application code from bypassing value checks.
 drop function if exists public.apply_order_payment_event(text, text, text, text, text, text);
 
 create or replace function public.apply_order_payment_event(
@@ -512,6 +733,36 @@ $$;
 revoke all on function public.redact_old_order_personal_data(integer) from public;
 grant execute on function public.redact_old_order_personal_data(integer) to service_role;
 
+create or replace function public.admin_auth_health()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'version', '2026-08-15-supabase-admin-auth-v1',
+    'adminProfilesTable', to_regclass('public.admin_profiles') is not null,
+    'adminAuditLogTable', to_regclass('public.admin_audit_log') is not null,
+    'activeAdministrators', (select count(*) from public.admin_profiles where is_active = true)
+  );
+$$;
+
+revoke all on function public.admin_auth_health() from public;
+grant execute on function public.admin_auth_health() to service_role;
+
+-- Constraints created NOT VALID protect new rows immediately. Validate them before
+-- advancing the schema version so legacy invalid data cannot be mistaken for ready.
+alter table public.orders validate constraint orders_status_check;
+alter table public.orders validate constraint orders_provider_check;
+alter table public.orders validate constraint orders_id_shape_check;
+alter table public.order_payment_events validate constraint order_payment_events_provider_check;
+alter table public.order_payment_events validate constraint order_payment_events_status_check;
+
+insert into public.app_schema_versions (version, description)
+values ('2026-08-15-supabase-admin-auth-v3', 'Supabase Auth administrator profiles, role authorization and audit logging')
+on conflict (version) do nothing;
+
 -- Readiness contract. Keep this last: if applying any required table or function above
 -- fails, the version is never advanced and the matching application stays not-ready.
 create or replace function public.order_database_health()
@@ -522,9 +773,11 @@ security definer
 set search_path = public
 as $$
   select jsonb_build_object(
-    'version', '2026-08-09-hosted-payments-v2',
+    'version', '2026-08-15-supabase-admin-auth-v3',
     'ordersTable', to_regclass('public.orders') is not null,
-    'paymentEventsTable', to_regclass('public.order_payment_events') is not null
+    'paymentEventsTable', to_regclass('public.order_payment_events') is not null,
+    'adminProfilesTable', to_regclass('public.admin_profiles') is not null,
+    'adminAuditLogTable', to_regclass('public.admin_audit_log') is not null
   );
 $$;
 

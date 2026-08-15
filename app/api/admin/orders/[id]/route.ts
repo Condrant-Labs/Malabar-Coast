@@ -5,7 +5,7 @@ import { isValidOrderId, noStoreJson } from "../../../../lib/security";
 export const runtime = "nodejs";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
-  const session = await getAdminSession();
+  const session = await getAdminSession("orders:read");
   if (!session) return noStoreJson({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await context.params;

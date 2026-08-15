@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "../lib/admin-auth";
+import { adminCan } from "../lib/admin-permissions";
 import { activeOrderStatuses, getReportRange, money, requestedToday, summariseOrders } from "../lib/admin-reporting";
 import { listOrdersForReport, listOrdersPage } from "../lib/order-store";
 import { orderStatusLabels } from "../lib/orders";
@@ -10,7 +11,7 @@ import { LiveRecentOrders } from "./components/live-recent-orders";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const session = await getAdminSession();
+  const session = await getAdminSession("dashboard:read");
   if (!session) redirect("/admin/login");
   const range = getReportRange("30d");
   const [recentOrders, reportingOrders, liveOrders] = await Promise.all([
@@ -24,7 +25,7 @@ export default async function AdminPage() {
   const realtimeUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const realtimePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 
-  return <AdminFrame active="/admin" csrfToken={session.csrfToken}>
+  return <AdminFrame active="/admin" session={session}>
     <AdminPageHeader
       eyebrow="Live restaurant overview"
       title="Good service starts here."
@@ -57,7 +58,7 @@ export default async function AdminPage() {
       <div className="adminPanelHeading"><div><p>Latest activity</p><h2>Recent orders</h2></div><Link href="/admin/orders">View every order</Link></div>
       <LiveRecentOrders
         initialOrders={recentOrders.slice(0, 8)}
-        csrfToken={session.csrfToken}
+        csrfToken={adminCan(session.role, "orders:transition") ? session.csrfToken : undefined}
         supabaseUrl={realtimeUrl}
         publishableKey={realtimePublishableKey}
       />

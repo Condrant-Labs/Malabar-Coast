@@ -10,7 +10,7 @@
 }
 
 .faqHero > p { margin: 0 0 3rem; color: #c89b53; font-size: .58rem; letter-spacing: .23em; text-transform: uppercase; }
-.faqHero h1 { max-width: 72rem; font-size: clamp(4.5rem, 10vw, 10.5rem); }
+.faqHero h1 { max-width: 72rem; font-size: clamp(4.2rem, 8vw, 8.5rem); }
 .faqHero h1 span:last-child { margin-left: clamp(1rem, 10vw, 10rem); color: transparent; -webkit-text-stroke: 1px rgba(242, 234, 217, .85); }
 .faqHero > div { display: flex; justify-content: space-between; gap: 2rem; align-items: flex-end; margin: 4rem 0 0 clamp(1rem, 10vw, 10rem); }
 .faqHero > div p { max-width: 31rem; margin: 0; font-family: "Iowan Old Style", Georgia, serif; font-size: clamp(1.05rem, 1.55vw, 1.45rem); line-height: 1.55; }
@@ -33,13 +33,13 @@
 
 .faqFooter { padding: clamp(5rem, 10vw, 10rem) clamp(1.25rem, 7vw, 7rem); background: #071310; color: #f2ead9; }
 .faqFooter > p { color: #c89b53; font-size: .56rem; letter-spacing: .22em; text-transform: uppercase; }
-.faqFooter h2 { margin: 2rem 0 4rem; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4rem, 9vw, 9rem); font-weight: 400; line-height: .82; letter-spacing: -.055em; text-transform: uppercase; }
+.faqFooter h2 { margin: 2rem 0 3rem; font-family: "Bodoni 72", Didot, serif; font-size: clamp(3.8rem, 7vw, 7rem); font-weight: 400; line-height: .82; letter-spacing: -.05em; text-transform: uppercase; }
 .faqFooter > div { display: flex; gap: 1rem; flex-wrap: wrap; }
 .faqFooter a { display: flex; justify-content: space-between; gap: 3rem; min-width: min(100%, 19rem); padding: 1rem 0; border-bottom: 1px solid rgba(242, 234, 217, .3); font-size: .59rem; font-weight: 600; letter-spacing: .17em; text-transform: uppercase; }
 
 @media (max-width: 720px) {
   .faqHero { min-height: 44rem; padding-top: 9rem; background-position: 58% center; }
-  .faqHero h1 { font-size: clamp(3.8rem, 17vw, 6rem); }
+  .faqHero h1 { font-size: clamp(3.5rem, 15vw, 5.2rem); }
   .faqHero h1 span:last-child { margin-left: 0; }
   .faqHero > div { display: block; margin: 3rem 0 0; }
   .faqHero time { display: block; margin-top: 1.5rem; }

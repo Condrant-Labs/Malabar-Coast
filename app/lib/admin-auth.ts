@@ -1,19 +1,49 @@
-import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
+import { adminCan, isAdminRole, type AdminPermission, type AdminRole } from "./admin-permissions";
+import {
+  isSupabaseAuthConfigured,
+  supabasePasswordSignIn,
+  supabaseServerRequest,
+  supabaseServerRpc,
+} from "./supabase/server";
 
 const ADMIN_COOKIE = "malabar_admin_session";
 const SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
 
+type AdminProfileRow = {
+  user_id: string;
+  email: string;
+  display_name: string;
+  role: string;
+  is_active: boolean;
+  session_version: number;
+};
+
+export type AdminIdentity = {
+  userId: string;
+  email: string;
+  displayName: string;
+  role: AdminRole;
+  sessionVersion: number;
+};
+
 type AdminSessionPayload = {
-  version: 1;
+  version: 2;
   issuedAt: number;
   expiresAt: number;
   nonce: string;
-  // Bound to the configured credentials so rotating the administrator password or
-  // username immediately invalidates every issued session cookie.
-  credentialEpoch: string;
+  userId: string;
+  role: AdminRole;
+  sessionVersion: number;
 };
+
+export type AdminSession = AdminIdentity & AdminSessionPayload & { csrfToken: string };
+
+export type AdminSignInResult =
+  | { ok: true; identity: AdminIdentity }
+  | { ok: false; reason: "credentials" | "authorization" | "unavailable" };
 
 function shouldUseSecureCookies() {
   try {
@@ -23,8 +53,6 @@ function shouldUseSecureCookies() {
   }
 }
 
-export type AdminSession = AdminSessionPayload & { csrfToken: string };
-
 function safeEqual(left: string, right: string) {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
@@ -33,8 +61,7 @@ function safeEqual(left: string, right: string) {
 
 function getSessionSecret() {
   const secret = process.env.ADMIN_SESSION_SECRET?.trim();
-  if (!secret || secret.length < 32) return null;
-  return secret;
+  return secret && secret.length >= 32 ? secret : null;
 }
 
 function sign(value: string, purpose: string) {
@@ -47,14 +74,31 @@ function createCsrfToken(nonce: string) {
   return sign(nonce, "admin-csrf") || "";
 }
 
-function credentialEpoch() {
-  return createHash("sha256")
-    .update(`${process.env.ADMIN_USERNAME?.trim().toLowerCase() || ""}\u0000${process.env.ADMIN_PASSWORD_HASH?.trim() || ""}`)
-    .digest("base64url")
-    .slice(0, 22);
+function profileIdentity(row: AdminProfileRow | undefined): AdminIdentity | null {
+  if (!row || !row.is_active || !isAdminRole(row.role) || !Number.isInteger(row.session_version) || row.session_version < 1) return null;
+  if (!/^[0-9a-f-]{36}$/i.test(row.user_id) || !row.email || !row.display_name) return null;
+  return {
+    userId: row.user_id,
+    email: row.email,
+    displayName: row.display_name,
+    role: row.role,
+    sessionVersion: row.session_version,
+  };
 }
 
-function parseSession(token: string | undefined): AdminSession | null {
+async function getAdminProfile(userId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) return null;
+  const query = new URLSearchParams({
+    user_id: `eq.${userId}`,
+    select: "user_id,email,display_name,role,is_active,session_version",
+    limit: "1",
+  });
+  const response = await supabaseServerRequest(`admin_profiles?${query}`, { method: "GET" });
+  const rows = await response.json() as AdminProfileRow[];
+  return profileIdentity(rows[0]);
+}
+
+function parseSession(token: string | undefined): AdminSessionPayload | null {
   if (!token) return null;
   const [encoded, signature] = token.split(".");
   if (!encoded || !signature) return null;
@@ -63,111 +107,74 @@ function parseSession(token: string | undefined): AdminSession | null {
 
   try {
     const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as AdminSessionPayload;
-    if (payload.version !== 1 || !payload.nonce || payload.expiresAt <= Math.floor(Date.now() / 1000)) return null;
-    if (!payload.credentialEpoch || !safeEqual(payload.credentialEpoch, credentialEpoch())) return null;
-    return { ...payload, csrfToken: createCsrfToken(payload.nonce) };
+    if (payload.version !== 2 || !payload.nonce || payload.expiresAt <= Math.floor(Date.now() / 1000)) return null;
+    if (!isAdminRole(payload.role) || !Number.isInteger(payload.sessionVersion) || payload.sessionVersion < 1) return null;
+    if (!/^[0-9a-f-]{36}$/i.test(payload.userId)) return null;
+    return payload;
   } catch {
     return null;
   }
 }
 
-// Layouts, newest first:
-//   scrypt:N=<n>,r=<r>,p=<p>:<salt>:<hash>   current
-//   scrypt$N=<n>,r=<r>,p=<p>$<salt>$<hash>   same, dollar separated
-//   scrypt$<salt>$<hash>                     original, at the library default cost
-//
-// The separator is a colon because Next.js parses .env files through dotenv-expand,
-// which treats `$name` as a variable reference. A dollar-separated hash in a .env file
-// is silently rewritten to a shorter string and the administrator page then reports
-// "setup required" with no other clue. Platform environment editors such as Vercel do
-// not expand, so dollar separated values are still accepted from those.
-const LEGACY_SCRYPT_COST = { N: 16_384, r: 8, p: 1 };
-export const CURRENT_SCRYPT_COST = { N: 32_768, r: 8, p: 1 };
-
-type ParsedPasswordHash = { salt: string; hash: Buffer; cost: { N: number; r: number; p: number } };
-
-function parseCost(encoded: string) {
-  const values = Object.fromEntries(encoded.split(",").map((pair) => pair.split("=")));
-  const N = Number(values.N);
-  const r = Number(values.r);
-  const p = Number(values.p);
-  if (!Number.isInteger(N) || !Number.isInteger(r) || !Number.isInteger(p) || N < 16_384 || r < 1 || p < 1) return null;
-  return { N, r, p };
-}
-
-export function parseAdminPasswordHash(value: string): ParsedPasswordHash | null {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith("scrypt")) return null;
-  const separator = trimmed[6];
-  if (separator !== ":" && separator !== "$") return null;
-
-  const parts = trimmed.split(separator);
-  let cost = LEGACY_SCRYPT_COST;
-  let salt: string | undefined;
-  let encodedHash: string | undefined;
-
-  if (parts.length === 3) [, salt, encodedHash] = parts;
-  else if (parts.length === 4) {
-    const parsedCost = parseCost(parts[1]);
-    if (!parsedCost) return null;
-    cost = parsedCost;
-    salt = parts[2];
-    encodedHash = parts[3];
-  } else return null;
-
-  if (!salt || !encodedHash) return null;
-  const hash = Buffer.from(encodedHash, "base64url");
-  return hash.length >= 32 ? { salt, hash, cost } : null;
-}
-
 export function isAdminConfigured() {
-  const configuredHash = process.env.ADMIN_PASSWORD_HASH?.trim() || "";
-  if (configuredHash && !parseAdminPasswordHash(configuredHash)) {
-    console.error(
-      "ADMIN_PASSWORD_HASH is set but unreadable. If it came from a .env file and contains '$',"
-      + " dotenv expansion has rewritten it. Regenerate it with `pnpm admin:hash`.",
-    );
-  }
-  return Boolean(process.env.ADMIN_USERNAME?.trim() && parseAdminPasswordHash(configuredHash) && getSessionSecret());
+  return Boolean(isSupabaseAuthConfigured() && getSessionSecret());
 }
 
-export function verifyAdminCredentials(username: string, password: string) {
-  const parsed = parseAdminPasswordHash(process.env.ADMIN_PASSWORD_HASH?.trim() || "");
-  const expectedUsername = process.env.ADMIN_USERNAME?.trim().toLowerCase() || "";
-  const configured = Boolean(expectedUsername && parsed && getSessionSecret());
-  const usernameMatches = configured && safeEqual(username.trim().toLowerCase(), expectedUsername);
+export async function authenticateSupabaseAdmin(email: string, password: string): Promise<AdminSignInResult> {
+  if (!isAdminConfigured()) return { ok: false, reason: "unavailable" };
+  const normalizedEmail = email.trim().toLowerCase();
+  if (normalizedEmail.length > 254 || !normalizedEmail.includes("@") || password.length < 8 || password.length > 256) {
+    return { ok: false, reason: "credentials" };
+  }
 
-  // The key derivation always runs, so a wrong username or an out-of-range password
-  // costs the same as a wrong password and cannot be distinguished by response time.
-  const cost = parsed?.cost ?? CURRENT_SCRYPT_COST;
-  const keyLength = parsed?.hash.length ?? 64;
-  let actualHash: Buffer;
+  let response: Response;
   try {
-    actualHash = scryptSync(password.slice(0, 256), parsed?.salt ?? "unconfigured", keyLength, {
-      ...cost,
-      maxmem: 256 * cost.N * cost.r,
-    });
+    response = await supabasePasswordSignIn(normalizedEmail, password);
   } catch {
-    return false;
+    return { ok: false, reason: "unavailable" };
   }
 
-  const passwordMatches = Boolean(parsed) && timingSafeEqual(parsed!.hash, actualHash);
-  return configured && usernameMatches && passwordMatches && password.length >= 12 && password.length <= 256;
+  if (!response.ok) return { ok: false, reason: response.status >= 500 ? "unavailable" : "credentials" };
+  const result = await response.json() as { user?: { id?: string; email?: string } };
+  const userId = result.user?.id || "";
+  if (!userId || result.user?.email?.toLowerCase() !== normalizedEmail) return { ok: false, reason: "credentials" };
+
+  try {
+    const identity = await getAdminProfile(userId);
+    if (!identity || identity.email.toLowerCase() !== normalizedEmail) return { ok: false, reason: "authorization" };
+    await supabaseServerRpc("record_admin_login", { p_actor_user_id: identity.userId });
+    return { ok: true, identity };
+  } catch {
+    return { ok: false, reason: "unavailable" };
+  }
 }
 
-export async function getAdminSession() {
+export async function getAdminSession(requiredPermission?: AdminPermission) {
+  if (!isAdminConfigured()) return null;
   const cookieStore = await cookies();
-  return parseSession(cookieStore.get(ADMIN_COOKIE)?.value);
+  const payload = parseSession(cookieStore.get(ADMIN_COOKIE)?.value);
+  if (!payload) return null;
+
+  try {
+    const identity = await getAdminProfile(payload.userId);
+    if (!identity || identity.role !== payload.role || identity.sessionVersion !== payload.sessionVersion) return null;
+    if (requiredPermission && !adminCan(identity.role, requiredPermission)) return null;
+    return { ...payload, ...identity, csrfToken: createCsrfToken(payload.nonce) } satisfies AdminSession;
+  } catch {
+    return null;
+  }
 }
 
-export function setAdminSession(response: NextResponse) {
+export function setAdminSession(response: NextResponse, identity: AdminIdentity) {
   const now = Math.floor(Date.now() / 1000);
   const payload: AdminSessionPayload = {
-    version: 1,
+    version: 2,
     issuedAt: now,
     expiresAt: now + SESSION_LIFETIME_SECONDS,
     nonce: randomBytes(24).toString("base64url"),
-    credentialEpoch: credentialEpoch(),
+    userId: identity.userId,
+    role: identity.role,
+    sessionVersion: identity.sessionVersion,
   };
   const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = sign(encoded, "admin-session");
@@ -195,4 +202,25 @@ export function clearAdminSession(response: NextResponse) {
 
 export function verifyAdminCsrf(session: AdminSession, candidate: string) {
   return Boolean(candidate && safeEqual(candidate, session.csrfToken));
+}
+
+export async function recordAdminLogout(session: AdminSession) {
+  try {
+    await supabaseServerRpc("record_admin_logout", { p_actor_user_id: session.userId });
+  } catch {
+    // Clearing the local session must still succeed if audit storage is temporarily
+    // unavailable. A failed database request is already visible in readiness checks.
+  }
+}
+
+export async function checkAdminAuthSchema() {
+  if (!isAdminConfigured()) return false;
+  try {
+    const health = await supabaseServerRpc<{ version?: string; adminProfilesTable?: boolean; adminAuditLogTable?: boolean }>("admin_auth_health", {});
+    return health.version === "2026-08-15-supabase-admin-auth-v1"
+      && health.adminProfilesTable === true
+      && health.adminAuditLogTable === true;
+  } catch {
+    return false;
+  }
 }

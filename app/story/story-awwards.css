@@ -110,7 +110,7 @@
 .storyFilmCopy h1 {
   margin: 0;
   font-family: "Bodoni 72", Didot, "Iowan Old Style", serif;
-  font-size: clamp(5rem, 10vw, 11.5rem);
+  font-size: clamp(4.6rem, 8vw, 9rem);
   font-weight: 400;
   line-height: .72;
   letter-spacing: -.065em;
@@ -164,7 +164,7 @@
   gap: 2vw;
   margin: clamp(3rem, 7vw, 7rem) 0;
   font-family: "Bodoni 72", Didot, "Iowan Old Style", serif;
-  font-size: clamp(6.4rem, 19vw, 22rem);
+  font-size: clamp(5.5rem, 13vw, 13rem);
   font-weight: 400;
   line-height: .6;
   letter-spacing: -.085em;
@@ -283,7 +283,7 @@
 .storyInfluencesHead { display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: end; gap: 2rem; padding-bottom: clamp(3rem, 6vw, 6rem); }
 .storyInfluencesHead p, .storyInfluencesHead span { margin: 0 0 .8rem; color: var(--story-brass); font-size: .55rem; letter-spacing: .2em; text-transform: uppercase; }
 .storyInfluencesHead span { justify-self: end; color: rgba(239, 230, 212, .5); }
-.storyInfluencesHead h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(5rem, 10vw, 11rem); font-weight: 400; line-height: .75; letter-spacing: -.06em; text-align: center; text-transform: uppercase; }
+.storyInfluencesHead h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4.2rem, 7.5vw, 8rem); font-weight: 400; line-height: .78; letter-spacing: -.055em; text-align: center; text-transform: uppercase; }
 .storyInfluenceGrid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(239, 230, 212, .22); border-left: 1px solid rgba(239, 230, 212, .22); }
 .influenceCell { min-height: 15rem; padding: 1.5rem; border-right: 1px solid rgba(239, 230, 212, .22); border-bottom: 1px solid rgba(239, 230, 212, .22); }
 .influenceCell > span { color: var(--story-brass); font-size: .52rem; letter-spacing: .18em; }
@@ -292,7 +292,7 @@
 
 .storyConnect { min-height: 78vh; padding: clamp(5.5rem, 8vw, 8rem) clamp(1.25rem, 4vw, 4.5rem) 2rem; background: var(--story-brass); color: #071310; }
 .storyConnect > p { margin: 0; font-size: .57rem; letter-spacing: .23em; text-transform: uppercase; }
-.storyConnect h2 { margin: clamp(3.5rem, 7vh, 6rem) 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(6rem, 15vw, 17rem); font-weight: 400; line-height: .63; letter-spacing: -.075em; text-transform: uppercase; }
+.storyConnect h2 { margin: clamp(3rem, 6vh, 5rem) 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(5rem, 10vw, 10rem); font-weight: 400; line-height: .7; letter-spacing: -.065em; text-transform: uppercase; }
 .storyConnect h2 em { margin-left: clamp(1rem, 12vw, 13rem); color: transparent; font-style: normal; -webkit-text-stroke: 1px rgba(7, 19, 16, .7); }
 .storyConnectBottom { display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: end; border-top: 1px solid rgba(7, 19, 16, .4); }
 .storyConnectBottom > span { padding-top: 1.5rem; font-size: .53rem; letter-spacing: .17em; text-transform: uppercase; }
@@ -300,7 +300,7 @@
 .storyConnectBottom a::after { content: ""; position: absolute; right: 100%; bottom: 0; left: 0; height: 2px; background: currentColor; transition: right .45s cubic-bezier(.2,.7,.2,1); }
 .storyConnectBottom a:hover::after, .storyConnectBottom a:focus-visible::after { right: 0; }
 .storyConnectCompact { min-height: 76vh; }
-.storyConnectCompact h2 { margin-block: clamp(3rem, 7vh, 6rem); font-size: clamp(5rem, 12vw, 13rem); }
+.storyConnectCompact h2 { margin-block: clamp(3rem, 6vh, 5rem); font-size: clamp(4.5rem, 9vw, 9rem); }
 
 .storyTable { padding: clamp(5.5rem, 9vw, 10rem) clamp(1.25rem, 4vw, 4.5rem); background: #e6dcc7; color: #10201c; }
 .storyTableIntro { display: grid; grid-template-columns: .55fr 1.25fr .7fr; gap: clamp(2rem, 5vw, 6rem); align-items: start; margin-bottom: clamp(3.5rem, 6vw, 6rem); }
@@ -323,7 +323,7 @@
 .calicutHeroShade { position: absolute; z-index: -2; inset: 0; background: linear-gradient(90deg, rgba(2,8,7,.8), rgba(2,8,7,.12) 72%), linear-gradient(180deg, rgba(2,8,7,.48), transparent 40%, rgba(2,8,7,.65)); }
 .calicutHeroGrid { position: absolute; inset: 0; }
 .calicutHeroMeta { position: absolute; z-index: 2; top: 9rem; right: clamp(1.25rem,4vw,4.5rem); left: clamp(1.25rem,4vw,4.5rem); display: flex; justify-content: space-between; color: var(--story-brass); font-size: .55rem; letter-spacing: .22em; text-transform: uppercase; }
-.calicutHero h1 { position: absolute; z-index: 2; bottom: 9vh; left: clamp(1.25rem,5vw,5rem); margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(8rem, 22vw, 27rem); font-weight: 400; line-height: .55; letter-spacing: -.09em; text-transform: uppercase; }
+.calicutHero h1 { position: absolute; z-index: 2; bottom: 9vh; left: clamp(1.25rem,5vw,5rem); margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(7rem, 15vw, 15rem); font-weight: 400; line-height: .62; letter-spacing: -.08em; text-transform: uppercase; }
 .calicutTitleLine { display: block; overflow: hidden; padding: .08em .08em .09em 0; }
 .calicutTitleLine > span { display: block; }
 .calicutTitleOffset { margin-left: clamp(4rem, 20vw, 22rem); color: var(--story-brass); mix-blend-mode: difference; }
@@ -358,7 +358,7 @@
 
 .calicutNext { min-height: 68vh; padding: clamp(5.5rem,8vw,9rem) clamp(1.25rem,5vw,5.5rem) 2rem; background: var(--story-brass); color: #071310; }
 .calicutNext > p { margin: 0 0 clamp(4rem,9vh,8rem); font-size: .56rem; letter-spacing: .22em; text-transform: uppercase; }
-.calicutNext > a { display: flex; align-items: center; justify-content: space-between; padding-block: 1rem; border-bottom: 1px solid rgba(7,19,16,.5); font-family: "Bodoni 72", Didot, serif; font-size: clamp(6rem,17vw,19rem); line-height: .78; letter-spacing: -.065em; text-transform: uppercase; }
+.calicutNext > a { display: flex; align-items: center; justify-content: space-between; padding-block: 1rem; border-bottom: 1px solid rgba(7,19,16,.5); font-family: "Bodoni 72", Didot, serif; font-size: clamp(5rem,11vw,11rem); line-height: .8; letter-spacing: -.06em; text-transform: uppercase; }
 .calicutNext > a i { font-size: clamp(3rem,8vw,8rem); font-style: normal; }
 .calicutNext small { display: block; margin-top: 2rem; font-size: .53rem; letter-spacing: .2em; text-transform: uppercase; }
 
@@ -371,7 +371,7 @@
   .storyHeroMeta { width: 100%; }
   .storyFilmFooter { grid-template-columns: 1fr auto; }
   .storyFilmFooter > span:last-child { display: none; }
-  .storyManifestoTitle { flex-direction: column; gap: .18em; font-size: clamp(6.2rem,24vw,12rem); }
+  .storyManifestoTitle { flex-direction: column; gap: .18em; font-size: clamp(5rem,19vw,9rem); }
   .storyManifestoTitle span:last-child { margin-left: 12vw; }
   .storyManifestoCopy { grid-template-columns: 1fr; margin-left: 0; }
   .storyAtlas { display: block; }
@@ -415,7 +415,7 @@
   .storyFilmFooter > span:first-child { max-width: 8rem; line-height: 1.5; }
   .storyFilmFooter div span { display: none; }
   .storyManifestoMeta { gap: 2rem; }
-  .storyManifestoTitle { font-size: 26vw; }
+  .storyManifestoTitle { font-size: clamp(4.6rem,20vw,7rem); }
   .storyManifestoCopy > p { font-size: 1.65rem; }
   .storyAtlasRail { width: 2rem; }
   .storyAtlasPanel { inset-right: 2rem; padding-inline: 1.25rem; }
@@ -427,7 +427,7 @@
   .storyQuote blockquote { font-size: 2.75rem; }
   .storyInfluenceGrid { grid-template-columns: 1fr; }
   .influenceCell { min-height: 12rem; }
-  .storyConnect h2 { font-size: 24vw; }
+  .storyConnect h2 { font-size: clamp(4.4rem,18vw,6.5rem); }
   .storyConnect h2 em { margin-left: 4vw; }
   .storyConnectBottom a { font-size: 1.75rem; }
   .storyTransition { flex-direction: column; }
@@ -438,7 +438,7 @@
   .calicutPlateTall { width: 88%; }
   .calicutLedger dl > div { grid-template-columns: 1fr auto; }
   .calicutLedger dd { grid-row: 2; grid-column: 1 / -1; }
-  .calicutNext > a { font-size: 23vw; }
+  .calicutNext > a { font-size: clamp(4rem,17vw,6.5rem); }
 }
 
 @media (max-width: 900px), (pointer: coarse) {

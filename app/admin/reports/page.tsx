@@ -16,7 +16,7 @@ function monthLabel(value: string) {
 }
 
 export default async function AdminReportsPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
-  const session = await getAdminSession();
+  const session = await getAdminSession("reports:read");
   if (!session) redirect("/admin/login");
   const query = await searchParams;
   const period = periods.some((candidate) => candidate.value === query.period) ? query.period as ReportPeriod : "30d";
@@ -27,7 +27,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
   const maxDay = Math.max(1, ...recentDays.map((day) => day.salesPence));
   const maxDish = Math.max(1, ...report.topDishes.map((dish) => dish.units));
 
-  return <AdminFrame active="/admin/reports" csrfToken={session.csrfToken}>
+  return <AdminFrame active="/admin/reports" session={session}>
     <AdminPageHeader eyebrow="Sales and performance" title="Know every service." description="Confirmed online sales, daily collections, monthly movement and dish demand—calculated directly from order records." actions={<nav className="adminPeriodTabs" aria-label="Report period">{periods.map((item) => <a className={period === item.value ? "isActive" : undefined} key={item.value} href={`/admin/reports?period=${item.value}`}>{item.label}</a>)}</nav>} />
     <section className="adminMetrics" aria-label="Report summary">
       <MetricCard label="Confirmed sales" value={money(report.confirmedSalesPence)} detail={`${report.paidOrders.length} paid orders`} tone="good" />
@@ -69,4 +69,3 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
     </section>
   </AdminFrame>;
 }
-

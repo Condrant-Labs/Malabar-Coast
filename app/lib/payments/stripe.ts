@@ -12,7 +12,15 @@ export type StripeCheckoutSession = {
 };
 
 export function isStripeConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
+  const secret = process.env.STRIPE_SECRET_KEY?.trim();
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  return Boolean(secret && /^(?:sk|rk)_(?:test|live)_/.test(secret) && webhookSecret?.startsWith("whsec_"));
+}
+
+export function isStripeProductionReady() {
+  const secret = process.env.STRIPE_SECRET_KEY?.trim();
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  return Boolean(secret && /^(?:sk|rk)_live_/.test(secret) && webhookSecret?.startsWith("whsec_"));
 }
 
 export async function createStripeCheckout(order: OrderRecord, baseUrl: string) {

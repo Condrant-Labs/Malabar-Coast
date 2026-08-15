@@ -1,7 +1,14 @@
 import { getSupabaseChannelClient } from "./config/supabase_channel";
 
 export async function publishPaymentCompletionEvent(orderId: string) {
-  const supabase = getSupabaseChannelClient();
+  let supabase: ReturnType<typeof getSupabaseChannelClient>;
+  try {
+    supabase = getSupabaseChannelClient();
+  } catch (error) {
+    console.warn("Payment was recorded, but the admin notification client is unavailable.", error instanceof Error ? error.name : "UnknownError");
+    return false;
+  }
+
   const channel = supabase.channel("admin-orders");
   try {
     const result = await channel.httpSend("orders-changed", {
@@ -10,8 +17,13 @@ export async function publishPaymentCompletionEvent(orderId: string) {
     });
 
     if (!result.success) {
-      throw new Error(`Could not publish payment-completed event: ${result.error}`);
+      console.warn("Payment was recorded, but the admin notification could not be published.");
+      return false;
     }
+    return true;
+  } catch (error) {
+    console.warn("Payment was recorded, but the admin notification failed.", error instanceof Error ? error.name : "UnknownError");
+    return false;
   } finally {
     void supabase.removeChannel(channel);
   }

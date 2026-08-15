@@ -38,7 +38,7 @@ body:has(.adminShell) { margin: 0; background: #f2efe7; }
 .adminLoginShell { display: grid; min-height: 100svh; place-items: center; padding: 1.25rem; background: radial-gradient(circle at 76% 16%,rgba(173,121,57,.2),transparent 30%),var(--admin-deep); color: #f1eadc; }
 .adminLoginCard { width: min(100%,42rem); padding: clamp(2rem,6vw,5rem); border: 1px solid rgba(241,234,220,.18); background: rgba(15,31,26,.96); box-shadow: 0 2rem 8rem rgba(0,0,0,.36); }
 .adminLoginCard > p,.adminPageHeader p,.adminPanelHeading p { margin: 0 0 .65rem; color: var(--admin-brass); font-size: .64rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
-.adminLoginCard h1 { margin: 0; font: 400 clamp(3.3rem,9vw,7rem)/.8 "Bodoni 72",Didot,Georgia,serif; letter-spacing: -.055em; text-transform: uppercase; }
+.adminLoginCard h1 { margin: 0; font: 400 clamp(3.3rem,7vw,5rem)/.82 "Bodoni 72",Didot,Georgia,serif; letter-spacing: -.055em; overflow-wrap: anywhere; text-transform: uppercase; }
 .adminLoginCard > span { display: block; max-width: 31rem; margin: 2rem 0; color: rgba(241,234,220,.62); font: 1.05rem/1.65 "Iowan Old Style",Georgia,serif; }
 .adminLoginCard form { display: grid; gap: 1rem; margin-top: 2rem; }
 .adminLoginCard label,.adminNotesPanel label { display: grid; gap: .55rem; color: rgba(241,234,220,.68); font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }

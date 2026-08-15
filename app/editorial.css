@@ -20,7 +20,7 @@
 .storyHeroCopy > p,
 .restaurantHeroCopy > p { margin: 0 0 1.5rem; color: var(--ed-brass); font-size: .62rem; letter-spacing: .25em; text-transform: uppercase; }
 .storyHeroCopy h1,
-.restaurantHeroCopy h1 { margin: 0; font-family: "Bodoni 72", Didot, "Iowan Old Style", serif; font-size: clamp(5rem, 9.5vw, 11rem); font-weight: 400; line-height: .77; letter-spacing: -.06em; text-transform: uppercase; }
+.restaurantHeroCopy h1 { margin: 0; font-family: "Bodoni 72", Didot, "Iowan Old Style", serif; font-size: clamp(4.6rem, 8vw, 9rem); font-weight: 400; line-height: .79; letter-spacing: -.055em; text-transform: uppercase; }
 .storyHeroCopy h1 span,
 .restaurantHeroCopy h1 span { display: block; }
 .storyHeroCopy h1 span:last-child,
@@ -65,7 +65,7 @@
 .ghatsCopy { position: absolute; z-index: 2; top: 50%; left: clamp(1.25rem,7vw,7rem); transform: translateY(-50%); }
 .ghatsCopy.isVisible { transform: translateY(-50%); }
 .ghatsCopy p { margin: 0 0 1.5rem; color: var(--ed-brass); font-size: .57rem; letter-spacing: .23em; text-transform: uppercase; }
-.ghatsCopy h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(6rem,13vw,14rem); font-weight: 400; line-height: .66; letter-spacing: -.07em; text-transform: uppercase; }
+.ghatsCopy h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(5rem,10vw,10rem); font-weight: 400; line-height: .7; letter-spacing: -.065em; text-transform: uppercase; }
 .ghatsCopy h2 span { display: block; }
 .ghatsCopy h2 span:nth-child(2) { margin-left: 8vw; color: transparent; -webkit-text-stroke: 1px rgba(239,230,212,.75); }
 .ghatsCopy h2 span:nth-child(3) { margin-left: 3vw; }
@@ -87,7 +87,7 @@
 
 .storyFinale { display: flex; flex-direction: column; justify-content: center; min-height: 90vh; padding: clamp(6rem,10vw,11rem) clamp(1.25rem,7vw,8rem); background: #071310; }
 .finaleMark { color: var(--ed-brass); font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; }
-.storyFinale h2 { margin: 2rem 0 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4.5rem,9vw,10rem); font-weight: 400; line-height: .78; letter-spacing: -.055em; text-transform: uppercase; }
+.storyFinale h2 { margin: 2rem 0 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4rem,7.5vw,8rem); font-weight: 400; line-height: .8; letter-spacing: -.05em; text-transform: uppercase; }
 .storyFinale h2 em { color: transparent; font-style: normal; -webkit-text-stroke: 1px rgba(239,230,212,.72); }
 .editorialCtas,
 .bridgeLinks { display: flex; gap: 1rem; margin-top: 3rem; }
@@ -101,7 +101,7 @@
 .restaurantHero > img { object-position: center center; }
 .restaurantHeroCopy { width: min(78vw,68rem); }
 .restaurantWelcome { display: grid; grid-template-columns: .7fr 1.6fr 1fr; gap: clamp(2rem,5vw,6rem); padding: clamp(5.5rem,8vw,9rem) clamp(1.25rem,6vw,7rem); background: #e5dac4; color: #10201c; }
-.restaurantWelcome h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4rem,7vw,8rem); font-weight: 400; line-height: .82; letter-spacing: -.05em; text-transform: uppercase; }
+.restaurantWelcome h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(3.8rem,6vw,6.5rem); font-weight: 400; line-height: .84; letter-spacing: -.05em; text-transform: uppercase; }
 .welcomeCopy p { margin: 0 0 1.25rem; color: rgba(16,32,28,.72); font-family: "Iowan Old Style", Georgia, serif; line-height: 1.65; }
 .welcomeCopy p:first-child { color: #10201c; font-size: 1.35rem; line-height: 1.35; }
 
@@ -114,7 +114,7 @@
 .restaurantHallTeaser > img { object-fit: cover; object-position: center; }
 .restaurantHallShade { position: absolute; inset: 0; background: linear-gradient(90deg,rgba(3,10,8,.83),rgba(3,10,8,.2) 68%),linear-gradient(180deg,transparent 58%,rgba(3,10,8,.55)); }
 .restaurantHallCopy { position: absolute; z-index: 2; top: 50%; left: clamp(1.25rem,7vw,8rem); width: min(42rem,80vw); transform: translateY(-50%); }
-.restaurantHallCopy h2 { margin: 1.25rem 0 1.75rem; font-family: "Bodoni 72",Didot,serif; font-size: clamp(4.5rem,8vw,9rem); font-weight: 400; line-height: .8; letter-spacing: -.055em; text-transform: uppercase; }
+.restaurantHallCopy h2 { margin: 1.25rem 0 1.75rem; font-family: "Bodoni 72",Didot,serif; font-size: clamp(4rem,6.5vw,7rem); font-weight: 400; line-height: .82; letter-spacing: -.05em; text-transform: uppercase; }
 .restaurantHallCopy > p { max-width: 31rem; color: rgba(239,230,212,.74); font-family: "Iowan Old Style",Georgia,serif; line-height: 1.65; }
 .restaurantHallCopy > div:last-child { display: flex; margin-top: 2rem; }
 .restaurantHallCopy a { display: inline-flex; justify-content: space-between; gap: 3rem; min-width: min(100%,19rem); padding: 1rem 0; border-bottom: 1px solid rgba(239,230,212,.38); font-size: .55rem; letter-spacing: .18em; text-transform: uppercase; }
@@ -127,7 +127,7 @@
 .materialList i { color: var(--ed-brass); font-family: "Avenir Next",sans-serif; font-size: .48rem; font-style: normal; letter-spacing: .12em; }
 
 .kitchenSignatures { padding: clamp(5.5rem,8vw,9rem) clamp(1.25rem,5vw,6rem); background: #e8deca; color: #10201c; }
-.kitchenSignatures > h2 { margin: 1.2rem 0 3.5rem; font-family: "Bodoni 72",Didot,serif; font-size: clamp(4rem,7vw,8rem); font-weight: 400; line-height: .82; letter-spacing: -.05em; text-transform: uppercase; }
+.kitchenSignatures > h2 { margin: 1.2rem 0 3rem; font-family: "Bodoni 72",Didot,serif; font-size: clamp(3.8rem,6vw,6.5rem); font-weight: 400; line-height: .84; letter-spacing: -.05em; text-transform: uppercase; }
 .signatureGrid { display: grid; grid-template-columns: repeat(3,1fr); gap: clamp(1rem,2vw,2rem); }
 .signatureImage { position: relative; min-height: clamp(19rem,34vw,34rem); margin-bottom: 1.5rem; overflow: hidden; background: #c9bea9; }
 .signatureImage img { object-fit: cover; transition: transform .8s cubic-bezier(.2,.7,.2,1); }
@@ -146,7 +146,7 @@
 .hospitalityQuote { position: absolute; z-index: 2; top: 50%; left: clamp(1.25rem,7vw,8rem); width: min(75vw,65rem); transform: translateY(-50%); }
 .hospitalityQuote.isVisible { transform: translateY(-50%); }
 .hospitalityQuote p { margin: 0 0 1.6rem; color: var(--ed-brass); font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; }
-.hospitalityQuote blockquote { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4.2rem,8vw,9rem); font-weight: 400; line-height: .84; letter-spacing: -.05em; text-transform: uppercase; }
+.hospitalityQuote blockquote { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(3.8rem,6.5vw,7rem); font-weight: 400; line-height: .86; letter-spacing: -.045em; text-transform: uppercase; }
 
 .restaurantStoryBridge { display: grid; grid-template-columns: .65fr 1.35fr 1fr; gap: clamp(2rem,5vw,6rem); align-items: start; padding: clamp(5.5rem,8vw,9rem) clamp(1.25rem,6vw,7rem); background: #e3d7c0; color: #10201c; }
 .restaurantStoryBridge h2 { margin-top: 0; }
@@ -156,7 +156,7 @@
 
 .locationSection { isolation: isolate; position: relative; min-height: 78vh; padding: clamp(6rem,9vw,9rem) clamp(1.25rem,6vw,7rem); overflow: hidden; background: #071310; }
 .locationGrid { position: absolute; z-index: -1; inset: 0; opacity: .18; background-image: linear-gradient(rgba(199,154,82,.24) 1px,transparent 1px),linear-gradient(90deg,rgba(199,154,82,.24) 1px,transparent 1px); background-size: 6rem 6rem; mask-image: radial-gradient(circle at 70% 45%,black,transparent 65%); }
-.locationSection > h2 { margin: 2rem 0 4rem; font-family: "Bodoni 72", Didot, serif; font-size: clamp(6rem,15vw,17rem); font-weight: 400; line-height: .72; letter-spacing: -.07em; text-transform: uppercase; }
+.locationSection > h2 { margin: 2rem 0 3rem; font-family: "Bodoni 72", Didot, serif; font-size: clamp(5rem,10vw,10rem); font-weight: 400; line-height: .76; letter-spacing: -.06em; text-transform: uppercase; }
 .locationDetails { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: end; margin-left: 34%; }
 .locationDetails address { display: flex; flex-direction: column; gap: .3rem; font-family: "Iowan Old Style",Georgia,serif; font-size: clamp(1.4rem,2.2vw,2.2rem); font-style: normal; line-height: 1.25; }
 .locationCoordinates { display: flex; align-items: center; gap: 1rem; margin-top: 2rem; color: rgba(239,230,212,.54); font-size: .51rem; letter-spacing: .18em; }
@@ -192,7 +192,7 @@
   .storyChapter { min-height: auto; padding: 6rem 0; }
   .ghatsInterlude,.hospitalityInterlude { min-height: 76svh; }
   .ghatsCopy { left: 1.2rem; }
-  .ghatsCopy h2 { font-size: 24vw; }
+  .ghatsCopy h2 { font-size: clamp(4rem,18vw,6.5rem); }
   .foodStory { display: flex; flex-direction: column; padding: 6rem 1.25rem; }
   .foodStoryIntro { padding: 0 0 3rem; }
   .foodImage,.foodImageLarge,.foodImageSmall { width: 100%; min-height: 62svh; margin: 0; }
@@ -219,7 +219,7 @@
   .hospitalityQuote blockquote { font-size: 13vw; }
   .restaurantStoryBridge > div > p { color: rgba(16,32,28,.72); }
   .locationSection { min-height: 72svh; padding: 6rem 1.25rem; }
-  .locationSection > h2 { margin: 2rem 0 3rem; font-size: 23vw; }
+  .locationSection > h2 { margin: 2rem 0 3rem; font-size: clamp(4rem,17vw,6.5rem); }
   .locationDetails { display: block; margin-left: 0; }
   .locationActions { flex-direction: column; margin-top: 3rem; }
   .locationActions a { justify-content: space-between; }
@@ -262,12 +262,12 @@
 .hallHeroShade { position: absolute; inset: 0; background: linear-gradient(90deg,rgba(3,9,8,.84),rgba(3,9,8,.3) 62%,rgba(3,9,8,.12)),linear-gradient(180deg,rgba(3,9,8,.3),transparent 42%,rgba(3,9,8,.66)); }
 .hallHeroCopy { position: absolute; z-index: 2; top: 52%; left: clamp(1.25rem,8vw,8.5rem); width: min(86vw,78rem); transform: translateY(-50%); }
 .hallHeroCopy > p { margin: 0 0 1.5rem; color: var(--ed-brass); font-size: .62rem; letter-spacing: .25em; text-transform: uppercase; }
-.hallHeroCopy h1 { margin: 0; font-family: "Bodoni 72",Didot,"Iowan Old Style",serif; font-size: clamp(5rem,10vw,11.5rem); font-weight: 400; line-height: .76; letter-spacing: -.065em; text-transform: uppercase; }
+.hallHeroCopy h1 { margin: 0; font-family: "Bodoni 72",Didot,"Iowan Old Style",serif; font-size: clamp(4.6rem,8vw,9rem); font-weight: 400; line-height: .79; letter-spacing: -.055em; text-transform: uppercase; }
 .hallHeroCopy h1 span { display: block; }
 .hallHeroCopy h1 span:last-child { margin-left: clamp(1rem,6vw,6rem); color: transparent; -webkit-text-stroke: 1px rgba(239,230,212,.85); }
 
 .hallIntroduction { display: grid; grid-template-columns: .65fr 1.45fr 1fr; gap: clamp(2rem,5vw,6rem); padding: clamp(6rem,10vw,11rem) clamp(1.25rem,6vw,7rem); background: #e5dac4; color: #10201c; }
-.hallIntroduction h2,.hallStageCopy h2,.hallGalleryHeading h2,.hallFaq h2,.hallClosing h2 { margin: 0; font-family: "Bodoni 72",Didot,serif; font-size: clamp(4rem,7vw,8rem); font-weight: 400; line-height: .82; letter-spacing: -.05em; text-transform: uppercase; }
+.hallIntroduction h2,.hallStageCopy h2,.hallGalleryHeading h2,.hallFaq h2,.hallClosing h2 { margin: 0; font-family: "Bodoni 72",Didot,serif; font-size: clamp(3.8rem,6vw,6.5rem); font-weight: 400; line-height: .84; letter-spacing: -.05em; text-transform: uppercase; }
 .hallIntroduction > div > p,.hallStageCopy > p,.hallClosing > p { margin: 0 0 1.35rem; font-family: "Iowan Old Style",Georgia,serif; font-size: clamp(.95rem,1.15vw,1.1rem); line-height: 1.68; }
 .hallIntroduction > div > p:first-child { font-size: clamp(1.15rem,1.6vw,1.5rem); line-height: 1.48; }
 .hallIntroduction time { display: block; margin-top: 2rem; color: #8a5d24; font-size: .51rem; letter-spacing: .18em; text-transform: uppercase; }
@@ -303,7 +303,7 @@
 .hallFaqList a { display: inline-flex; width: fit-content; min-height: 2.75rem; align-items: center; margin-top: .5rem; color: var(--ed-brass); font-size: .48rem; letter-spacing: .14em; text-transform: uppercase; }
 
 .hallClosing { padding: clamp(6rem,10vw,11rem) clamp(1.25rem,7vw,8rem); background: #c79a52; color: #071310; }
-.hallClosing h2 { margin: 1.5rem 0 2rem; font-size: clamp(5rem,10vw,11rem); }
+.hallClosing h2 { margin: 1.5rem 0 2rem; font-size: clamp(4.2rem,7.5vw,8rem); }
 .hallClosing > p { max-width: 38rem; }
 .hallClosingActions { display: flex; gap: 1rem; margin-top: 3rem; }
 .hallClosingActions a { display: inline-flex; justify-content: space-between; gap: 3rem; min-width: min(100%,19rem); padding: 1rem 0; border-bottom: 1px solid rgba(7,19,16,.45); font-size: .55rem; font-weight: 600; letter-spacing: .17em; text-transform: uppercase; }

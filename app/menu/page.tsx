@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AddToOrder } from "../components/add-to-order";
+import { DietaryMarker } from "../components/dietary-marker";
 import { categoryDetails, formatPrice, getMenuItem, menuItems, type MenuCategory } from "../lib/menu";
 
 const voyageStops = [
@@ -83,7 +84,7 @@ export default function MenuPage() {
                     <p className="portRegion">Port {String(index + 1).padStart(2, "0")} · {stop.region}</p>
                     <h2>{stop.port}</h2><div className="dishRule" /><p className="courseLabel">{stop.course}</p><h3>{dish.name}</h3>
                     <p className="dishDescription">{stop.description}</p>
-                    <div className="dishFooter"><strong>{formatPrice(dish.pricePence)}</strong>{dish.dietary.map((tag) => <span key={tag}>{tag}</span>)}<span>{dish.spice}</span></div>
+                    <div className="dishFooter"><strong>{formatPrice(dish.pricePence)}</strong><DietaryMarker dietary={dish.dietary} compact />{dish.dietary.filter((tag) => tag !== "V" && tag !== "VG").map((tag) => <span className="dishAttribute" key={tag}>{tag}</span>)}<span className="dishAttribute">{dish.spice}</span></div>
                     <AddToOrder id={dish.id} />
                   </div>
                 </article>
@@ -106,7 +107,7 @@ export default function MenuPage() {
                 <div className="manifestHeading"><span>{detail.number}</span><div><p>{detail.note}</p><h3>{detail.title}</h3></div></div>
                 <ul>{menuItems.filter((item) => item.category === category).map((dish) => (
                   <li key={dish.id}>
-                    <div className="manifestDish"><strong>{dish.name}</strong><span>{dish.description}</span><small>{dish.dietary.join(" · ") || "—"}{dish.allergens.length ? ` · Contains ${dish.allergens.join(", ")}` : ""}</small></div>
+                    <div className="manifestDish"><strong>{dish.name}</strong><span>{dish.description}</span><div className="manifestDishMeta"><DietaryMarker dietary={dish.dietary} compact /><small>{dish.dietary.filter((tag) => tag !== "V" && tag !== "VG").join(" · ")}{dish.allergens.length ? `${dish.dietary.some((tag) => tag !== "V" && tag !== "VG") ? " · " : ""}Contains ${dish.allergens.join(", ")}` : ""}</small></div></div>
                     <div className="manifestOrder"><b>{formatPrice(dish.pricePence)}</b><AddToOrder id={dish.id} compact /></div>
                   </li>
                 ))}</ul>
@@ -114,7 +115,7 @@ export default function MenuPage() {
             );
           })}
         </div>
-        <div className="dietaryKey"><span><b>V</b> Vegetarian</span><span><b>VG</b> Vegan</span><span><b>GF</b> Gluten free</span><span><b>DF</b> Dairy free</span><p>Please tell us about allergies when ordering. Our kitchen handles all 14 regulated allergens and cross-contact may occur.</p></div>
+        <div className="dietaryKey"><DietaryMarker dietary={["VG"]} /><DietaryMarker dietary={["V"]} /><DietaryMarker dietary={[]} /><span className="dietaryAbbreviation"><b>GF</b> Gluten free</span><span className="dietaryAbbreviation"><b>DF</b> Dairy free</span><p>Please tell us about allergies when ordering. Our kitchen handles all 14 regulated allergens and cross-contact may occur.</p></div>
       </section>
 
       <footer className="menuFooter"><div><p>End of the chart</p><h2>Arrive hungry.</h2></div><div className="menuFooterActions"><Link href="/checkout">Review your order <span aria-hidden="true">→</span></Link><Link href="/#reservations">Reserve your table <span aria-hidden="true">↗</span></Link></div><small>33 Main Street · Holytown · ML1 4TH</small></footer>

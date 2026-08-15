@@ -13,8 +13,7 @@ const testimonialRecords = [
     text: "Eight early diners have already placed Malabar Coast at 4.75 out of 5—a warm first word from Holytown.",
     author: "Just Eat guests",
     role: "Independent delivery platform",
-    sourceUrl: "https://www.just-eat.co.uk/area/ML1-Holytown",
-    sourceLabel: "View source",
+    sources: [{ url: "https://www.just-eat.co.uk/area/ML1-Holytown", label: "View source" }],
   },
   {
     rating: "5.0",
@@ -23,8 +22,31 @@ const testimonialRecords = [
     text: "The first two ratings arrived as a perfect 5.0 out of 5, carrying the earliest taste of the kitchen beyond our doors.",
     author: "Uber Eats guests",
     role: "Independent delivery platform",
-    sourceUrl: "https://www.ubereats.com/gb/store/malabar-coast/fLSpFqDpXgaMbY7XNRZDVQ",
-    sourceLabel: "View source",
+    sources: [{ url: "https://www.ubereats.com/gb/store/malabar-coast/fLSpFqDpXgaMbY7XNRZDVQ", label: "View source" }],
+  },
+  {
+    rating: "4.80",
+    ratingLabel: "Combined rating of 4.8 out of 5",
+    ratingCount: "10 ratings across two platforms",
+    text: "Taken together, the ten published ratings average 4.8 out of 5—a transparent combined view of the early guest response.",
+    author: "Combined guest score",
+    role: "Calculated from the two public records above",
+    sources: [
+      { url: "https://www.just-eat.co.uk/area/ML1-Holytown", label: "Just Eat" },
+      { url: "https://www.ubereats.com/gb/store/malabar-coast/fLSpFqDpXgaMbY7XNRZDVQ", label: "Uber Eats" },
+    ],
+  },
+  {
+    rating: "4.75+",
+    ratingLabel: "Both platform ratings are at least 4.75 out of 5",
+    ratingCount: "2 independent platform records",
+    text: "Both published platform scores sit at 4.75 or higher, giving the opening guest book a consistently strong first chapter.",
+    author: "Across the guest book",
+    role: "Cross-platform rating summary",
+    sources: [
+      { url: "https://www.just-eat.co.uk/area/ML1-Holytown", label: "Just Eat" },
+      { url: "https://www.ubereats.com/gb/store/malabar-coast/fLSpFqDpXgaMbY7XNRZDVQ", label: "Uber Eats" },
+    ],
   },
 ] as const;
 
@@ -132,11 +154,13 @@ export function HomeTestimonials() {
                     <cite>{record.author}</cite>
                     <small>{record.role}</small>
                   </span>
-                  {"sourceUrl" in record && (
-                    <a href={record.sourceUrl} target="_blank" rel="noreferrer">
-                      {record.sourceLabel} <span aria-hidden="true">↗</span>
-                    </a>
-                  )}
+                  <span className="homeTestimonialSources">
+                    {record.sources.map((source) => (
+                      <a href={source.url} target="_blank" rel="noreferrer" key={source.label}>
+                        {source.label} <span aria-hidden="true">↗</span>
+                      </a>
+                    ))}
+                  </span>
                 </footer>
               </blockquote>
             </article>

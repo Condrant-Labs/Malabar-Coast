@@ -7,7 +7,7 @@ import { configuredSiteOrigin, isTrustedOrigin, isValidOrderId, readLimitedFormD
 export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
-  const session = await getAdminSession();
+  const session = await getAdminSession("orders:transition");
   if (!isTrustedOrigin(request) || !session) return new NextResponse("Forbidden", { status: 403 });
   let form: URLSearchParams;
   try {
@@ -23,7 +23,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return new NextResponse("Invalid status request", { status: 400 });
   }
 
-  const updated = await transitionOrderStatus(id, nextStatus);
+  const updated = await transitionOrderStatus(id, nextStatus, session.userId);
   const requestedReturn = String(form.get("returnTo") || "");
   const safeReturn = requestedReturn.startsWith("/admin") && !requestedReturn.startsWith("//")
     ? requestedReturn

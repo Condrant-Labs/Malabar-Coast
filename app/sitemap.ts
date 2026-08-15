@@ -12,6 +12,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: absoluteUrl("/story"), lastModified, changeFrequency: "monthly", priority: .75 },
     { url: absoluteUrl("/story/calicut"), lastModified, changeFrequency: "yearly", priority: .6 },
     { url: absoluteUrl("/faq"), lastModified, changeFrequency: "monthly", priority: .8 },
+    { url: absoluteUrl("/payments"), lastModified, changeFrequency: "yearly", priority: .35 },
+    { url: absoluteUrl("/returns"), lastModified, changeFrequency: "yearly", priority: .35 },
+    { url: absoluteUrl("/cookie"), lastModified, changeFrequency: "yearly", priority: .3 },
+    { url: absoluteUrl("/privacy"), lastModified, changeFrequency: "yearly", priority: .3 },
   ];
 }
 

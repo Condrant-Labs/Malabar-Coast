@@ -97,7 +97,7 @@ export function SiteHeader() {
         </Link>
 
         <Link className="brand" href="/" aria-label="Malabar Coast home" onClick={handleBrandClick}>
-          <Image src="/logo-white.png" alt="Malabar Coast" width={1372} height={285} priority />
+          <Image src="/malabar af.svg" alt="Malabar Coast" width={2383} height={2402} priority />
         </Link>
 
         <div className="headerActions" inert={navMinimal}>

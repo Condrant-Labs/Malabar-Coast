@@ -87,10 +87,10 @@ export default function Home() {
           </div>
           <div className="introLogo" aria-hidden="true">
             <Image
-              src="/logo-white.png"
+              src="/malabar af.svg"
               alt=""
-              width={1372}
-              height={285}
+              width={2383}
+              height={2402}
               priority
             />
           </div>

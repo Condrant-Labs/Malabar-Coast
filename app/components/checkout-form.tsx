@@ -64,7 +64,6 @@ export function CheckoutForm() {
 
   return (
     <main className="checkoutPage">
-      <header className="checkoutHero"><p>Secure checkout · Holytown</p><h1><span>Complete your</span><span>order.</span></h1><div><span>{lines.reduce((sum, line) => sum + line.quantity, 0)} items</span><i /><span>{formatPrice(totalPence)}</span></div></header>
       <form className="checkoutLayout" onSubmit={handleSubmit}>
         <div className="checkoutDetails">
           <section className="checkoutSection"><div className="checkoutSectionHeading"><span>01</span><div><p>Your details</p><h2>Who is collecting?</h2></div></div><div className="fieldGrid"><label>Full name<input name="name" autoComplete="name" required /></label><label>Email address<input name="email" type="email" autoComplete="email" required /></label><label>Phone number<input name="phone" type="tel" autoComplete="tel" required /></label></div></section>

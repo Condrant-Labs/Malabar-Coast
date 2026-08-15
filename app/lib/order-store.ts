@@ -1,50 +1,12 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getAllowedAdminTransitions, resolvePaymentTransition, type OrderRecord, type OrderStatus, type PaymentProvider, type PaymentStatus } from "./orders";
+import { isSupabaseServerConfigured, supabaseServerRequest, supabaseServerRpc } from "./supabase/server";
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const dataFile = path.join(dataDirectory, "orders.json");
-const ORDER_DATABASE_CONTRACT_VERSION = "2026-08-09-hosted-payments-v2";
+const ORDER_DATABASE_CONTRACT_VERSION = "2026-08-15-supabase-admin-auth-v3";
 let writeQueue: Promise<void> = Promise.resolve();
-
-function supabaseUrl() {
-  return process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-}
-
-function supabaseServerKey() {
-  return process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-}
-
-function hasSupabase() {
-  return Boolean(supabaseUrl() && supabaseServerKey());
-}
-
-async function supabaseRequest(pathname: string, init: RequestInit) {
-  const url = supabaseUrl();
-  const key = supabaseServerKey();
-  if (!url || !key) throw new Error("Order database is not configured.");
-  const response = await fetch(`${url}/rest/v1/${pathname}`, {
-    ...init,
-    signal: init.signal ?? AbortSignal.timeout(10_000),
-    headers: {
-      apikey: key,
-      // Current sb_secret keys belong only in `apikey`; legacy service-role JWTs
-      // must also be supplied as the bearer token expected by PostgREST.
-      ...(!key.startsWith("sb_secret_") ? { Authorization: `Bearer ${key}` } : {}),
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-      ...init.headers,
-    },
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`Order database request failed (${response.status}).`);
-  return response;
-}
-
-async function supabaseRpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  const response = await supabaseRequest(`rpc/${name}`, { method: "POST", body: JSON.stringify(body) });
-  return response.json() as Promise<T>;
-}
 
 async function readLocalOrders(): Promise<OrderRecord[]> {
   try {
@@ -63,8 +25,8 @@ async function writeLocalOrders(orders: OrderRecord[]) {
 }
 
 export async function getOrder(id: string): Promise<OrderRecord | null> {
-  if (hasSupabase()) {
-    const response = await supabaseRequest(`orders?id=eq.${encodeURIComponent(id)}&select=data&limit=1`, { method: "GET" });
+  if (isSupabaseServerConfigured()) {
+    const response = await supabaseServerRequest(`orders?id=eq.${encodeURIComponent(id)}&select=data&limit=1`, { method: "GET" });
     const rows = await response.json() as { data: OrderRecord }[];
     return rows[0]?.data ?? null;
   }
@@ -78,8 +40,8 @@ export type AtomicCheckoutResult = {
 
 export async function createCheckoutOrderAtomic(order: OrderRecord): Promise<AtomicCheckoutResult> {
   if (!order.idempotencyKeyHash || !order.requestFingerprint) throw new Error("Checkout idempotency data is missing.");
-  if (hasSupabase()) {
-    return supabaseRpc<AtomicCheckoutResult>("create_checkout_order", {
+  if (isSupabaseServerConfigured()) {
+    return supabaseServerRpc<AtomicCheckoutResult>("create_checkout_order", {
       p_id: order.id,
       p_provider: order.provider,
       p_idempotency_key_hash: order.idempotencyKeyHash,
@@ -107,13 +69,13 @@ export async function createCheckoutOrderAtomic(order: OrderRecord): Promise<Ato
 }
 
 export function isDurableOrderStorageConfigured() {
-  return hasSupabase();
+  return isSupabaseServerConfigured();
 }
 
 export async function checkDurableOrderStorage() {
-  if (!hasSupabase()) return false;
+  if (!isSupabaseServerConfigured()) return false;
   try {
-    const health = await supabaseRpc<{ version?: string }>("order_database_health", {});
+    const health = await supabaseServerRpc<{ version?: string }>("order_database_health", {});
     return health.version === ORDER_DATABASE_CONTRACT_VERSION;
   } catch {
     return false;
@@ -122,9 +84,9 @@ export async function checkDurableOrderStorage() {
 
 export async function listOrders(limit = 100): Promise<OrderRecord[]> {
   const safeLimit = Math.min(250, Math.max(1, Math.floor(limit)));
-  if (hasSupabase()) {
+  if (isSupabaseServerConfigured()) {
     const query = new URLSearchParams({ select: "data", order: "created_at.desc", limit: String(safeLimit) });
-    const response = await supabaseRequest(`orders?${query}`, { method: "GET" });
+    const response = await supabaseServerRequest(`orders?${query}`, { method: "GET" });
     const rows = await response.json() as { data: OrderRecord }[];
     return rows.map((row) => row.data);
   }
@@ -146,7 +108,7 @@ export type OrderListOptions = {
 export async function listOrdersPage(options: OrderListOptions = {}): Promise<OrderRecord[]> {
   const limit = Math.min(1_000, Math.max(1, Math.floor(options.limit ?? 100)));
   const offset = Math.max(0, Math.floor(options.offset ?? 0));
-  if (hasSupabase()) {
+  if (isSupabaseServerConfigured()) {
     const query = new URLSearchParams({
       select: "data",
       order: "created_at.desc",
@@ -158,7 +120,7 @@ export async function listOrdersPage(options: OrderListOptions = {}): Promise<Or
     if (options.statuses?.length) query.set("status", `in.(${options.statuses.join(",")})`);
     if (options.fulfilment) query.set("data->>fulfilment", `eq.${options.fulfilment}`);
     if (options.provider) query.set("provider", `eq.${options.provider}`);
-    const response = await supabaseRequest(`orders?${query}`, { method: "GET" });
+    const response = await supabaseServerRequest(`orders?${query}`, { method: "GET" });
     const rows = await response.json() as { data: OrderRecord }[];
     return rows.map((row) => row.data);
   }
@@ -190,11 +152,12 @@ export async function listOrdersForReport(
   return orders;
 }
 
-export async function updateOrderAdminNotes(id: string, adminNotes: string) {
-  if (hasSupabase()) {
-    return supabaseRpc<OrderRecord | null>("update_order_admin_notes", {
+export async function updateOrderAdminNotes(id: string, adminNotes: string, actorUserId: string) {
+  if (isSupabaseServerConfigured()) {
+    return supabaseServerRpc<OrderRecord | null>("update_order_admin_notes", {
       p_order_id: id,
       p_admin_notes: adminNotes,
+      p_actor_user_id: actorUserId,
     });
   }
 
@@ -214,8 +177,8 @@ export async function updateOrderAdminNotes(id: string, adminNotes: string) {
 
 export async function attachCheckoutProviderReference(id: string, provider: PaymentProvider, providerReference?: string, providerCheckoutUrl?: string) {
   if (!providerReference && !providerCheckoutUrl) throw new Error("Provider checkout identity is missing.");
-  if (hasSupabase()) {
-    return supabaseRpc<OrderRecord | null>("attach_checkout_provider_reference", {
+  if (isSupabaseServerConfigured()) {
+    return supabaseServerRpc<OrderRecord | null>("attach_checkout_provider_reference", {
       p_order_id: id,
       p_provider: provider,
       p_provider_reference: providerReference || null,
@@ -245,9 +208,13 @@ export async function attachCheckoutProviderReference(id: string, provider: Paym
   return result;
 }
 
-export async function transitionOrderStatus(id: string, nextStatus: OrderStatus) {
-  if (hasSupabase()) {
-    return supabaseRpc<OrderRecord | null>("transition_order_status", { p_order_id: id, p_next_status: nextStatus });
+export async function transitionOrderStatus(id: string, nextStatus: OrderStatus, actorUserId: string) {
+  if (isSupabaseServerConfigured()) {
+    return supabaseServerRpc<OrderRecord | null>("transition_order_status", {
+      p_order_id: id,
+      p_next_status: nextStatus,
+      p_actor_user_id: actorUserId,
+    });
   }
 
   let result: OrderRecord | null = null;
@@ -284,8 +251,8 @@ export async function applyPaymentEvent(input: {
   amountPence?: number;
   currency?: string;
 }) {
-  if (hasSupabase()) {
-    return supabaseRpc<boolean>("apply_order_payment_event", {
+  if (isSupabaseServerConfigured()) {
+    return supabaseServerRpc<boolean>("apply_order_payment_event", {
       p_provider: input.provider,
       p_event_id: input.eventId,
       p_order_id: input.orderId,

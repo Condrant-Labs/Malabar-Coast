@@ -16,6 +16,13 @@ export type WorldpayPaymentSummary = {
   value?: { amount?: number; currency?: string };
 };
 
+export type WorldpayPaymentIdentity = {
+  providerReference: string;
+  lastEvent?: string;
+  amountPence: number;
+  currency: string;
+};
+
 function credentials() {
   const username = process.env.WORLDPAY_USERNAME?.trim();
   const password = process.env.WORLDPAY_PASSWORD;
@@ -53,7 +60,12 @@ export function isWorldpayCheckoutEnabled() {
 
   // A local Try integration can be exercised before Worldpay boards the webhook.
   // Live and production checkout fail closed unless event authenticity is configured.
-  if (process.env.WORLDPAY_ENVIRONMENT === "live" || process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production") {
+    return coreReady
+      && process.env.WORLDPAY_ENVIRONMENT === "live"
+      && isWorldpayWebhookSignatureConfigured();
+  }
+  if (process.env.WORLDPAY_ENVIRONMENT === "live") {
     return coreReady && isWorldpayWebhookSignatureConfigured();
   }
   return coreReady;
@@ -61,7 +73,8 @@ export function isWorldpayCheckoutEnabled() {
 
 export function isWorldpayProductionReady() {
   const { username, password, entity } = credentials();
-  return process.env.WORLDPAY_CHECKOUT_ENABLED === "true"
+  return process.env.WORLDPAY_ENVIRONMENT === "live"
+    && process.env.WORLDPAY_CHECKOUT_ENABLED === "true"
     && Boolean(username && password && entity)
     && isWorldpayWebhookSignatureConfigured();
 }
@@ -106,14 +119,20 @@ export async function createWorldpayHostedPayment(order: OrderRecord, baseUrl: s
 
 export function resolveWorldpayQueryPaymentStatus(lastEvent: string): PaymentStatus | undefined {
   const normalized = lastEvent.toLowerCase().replace(/[^a-z]/g, "");
-  if (["authorizationsucceeded", "salesucceeded", "settlementsucceeded"].includes(normalized)) return "paid";
+  if ([
+    "authorizationsucceeded",
+    "salesucceeded",
+    "settlementrequested",
+    "settlementrequestsubmitted",
+    "settlementsucceeded",
+  ].includes(normalized)) return "paid";
   if (["authorizationrefused", "authorizationfailed", "salerefused", "salefailed"].includes(normalized)) return "failed";
   if (["cancellationsucceeded", "paymentscancelled"].includes(normalized)) return "cancelled";
   if (["settlementfailed", "reversalsucceeded"].includes(normalized)) return "reversed";
   return undefined;
 }
 
-export async function retrieveWorldpayPaymentForOrder(order: OrderRecord) {
+export async function retrieveWorldpayPaymentIdentityForOrder(order: OrderRecord): Promise<WorldpayPaymentIdentity | null> {
   const { username, password } = credentials();
   if (!username || !password || order.provider !== "worldpay") return null;
   const query = new URLSearchParams({ transactionReference: order.id });
@@ -123,7 +142,10 @@ export async function retrieveWorldpayPaymentForOrder(order: OrderRecord) {
       Accept: "application/vnd.worldpay.payment-queries-v1.hal+json",
     },
     cache: "no-store",
-    signal: AbortSignal.timeout(15_000),
+    // Worldpay expects webhook acknowledgement within ten seconds. Keep this
+    // identity lookup below that ceiling so the handler can deliberately return
+    // 503 and receive a retry rather than being cut off mid-request.
+    signal: AbortSignal.timeout(7_500),
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Worldpay payment query failed (${response.status}).`);
@@ -138,14 +160,26 @@ export async function retrieveWorldpayPaymentForOrder(order: OrderRecord) {
   );
   if (matches.length !== 1) return null;
   const payment = matches[0];
-  const paymentStatus = payment.lastEvent ? resolveWorldpayQueryPaymentStatus(payment.lastEvent) : undefined;
-  if (!payment.paymentId || !payment.lastEvent || !paymentStatus || !payment.value?.currency) return null;
+  if (!payment.paymentId || !payment.value?.currency || payment.value.amount === undefined) return null;
   return {
     providerReference: payment.paymentId,
-    eventId: `query:${payment.paymentId}:${payment.lastEvent}`,
+    lastEvent: payment.lastEvent,
+    amountPence: payment.value.amount,
+    currency: payment.value.currency,
+  };
+}
+
+export async function retrieveWorldpayPaymentForOrder(order: OrderRecord) {
+  const payment = await retrieveWorldpayPaymentIdentityForOrder(order);
+  if (!payment) return null;
+  const paymentStatus = payment.lastEvent ? resolveWorldpayQueryPaymentStatus(payment.lastEvent) : undefined;
+  if (!payment.lastEvent || !paymentStatus) return null;
+  return {
+    providerReference: payment.providerReference,
+    eventId: `query:${payment.providerReference}:${payment.lastEvent}`,
     outcome: `payment_query:${payment.lastEvent}`,
     paymentStatus,
-    amountPence: payment.value.amount!,
-    currency: payment.value.currency,
+    amountPence: payment.amountPence,
+    currency: payment.currency,
   };
 }

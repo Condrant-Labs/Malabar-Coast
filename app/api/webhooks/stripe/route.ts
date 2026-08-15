@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { applyPaymentEvent, getOrder } from "../../../lib/order-store";
-import type { PaymentStatus } from "../../../lib/orders";
+import { inferPaymentStatus, type PaymentStatus } from "../../../lib/orders";
 import {
   retrieveStripeCheckoutSession,
   retrieveStripeCheckoutSessionForPaymentIntent,
@@ -8,6 +8,7 @@ import {
   type StripeCheckoutSession,
 } from "../../../lib/payments/stripe";
 import { isValidOrderId, noStoreJson, readLimitedText, RequestBodyTooLargeError } from "../../../lib/security";
+import { publishPaymentCompletionEvent } from "@/app/lib/publishEvent";
 
 export const runtime = "nodejs";
 
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
   }
   const paymentStatus = paymentStatusFor(event.type, object, session);
   if (paymentStatus && session.id && session.amount_total !== undefined && session.currency) {
-    await applyPaymentEvent({
+    const applied = await applyPaymentEvent({
       provider: "stripe",
       eventId: event.id,
       orderId,
@@ -113,6 +114,9 @@ export async function POST(request: Request) {
       amountPence: session.amount_total,
       currency: session.currency,
     });
+    if (applied && paymentStatus==="paid" && inferPaymentStatus(order) !== "paid"){
+      await publishPaymentCompletionEvent(orderId);
+    }
   }
   return noStoreJson({ received: true });
 }

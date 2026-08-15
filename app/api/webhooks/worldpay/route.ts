@@ -1,4 +1,5 @@
-import { applyPaymentEvent } from "../../../lib/order-store";
+import { publishPaymentCompletionEvent } from "@/app/lib/publishEvent";
+import { applyPaymentEvent, getOrder } from "../../../lib/order-store";
 import {
   isKnownWorldpayEventType,
   resolveWorldpayAmount,
@@ -7,6 +8,7 @@ import {
   verifyWorldpayEventSignature,
 } from "../../../lib/payments/worldpay-events";
 import { noStoreJson, readLimitedText, RequestBodyTooLargeError, isValidOrderId } from "../../../lib/security";
+import { inferPaymentStatus } from "@/app/lib/orders";
 
 export const runtime = "nodejs";
 
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
 
   const paymentStatus = resolveWorldpayPaymentStatus(eventType);
   if (paymentStatus) {
+    const orderBefore = await getOrder(orderId);
     const applied = await applyPaymentEvent({
       provider: "worldpay",
       eventId,
@@ -59,6 +62,9 @@ export async function POST(request: Request) {
       currency: resolveWorldpayCurrency(details, event),
     });
     if (!applied) console.warn("Rejected a Worldpay event that did not match its stored order.", eventId);
+    if (applied && paymentStatus==="paid" && orderBefore && inferPaymentStatus(orderBefore)!=="paid"){
+      await publishPaymentCompletionEvent(orderId);
+    }
   }
   return noStoreJson({ received: true });
 }

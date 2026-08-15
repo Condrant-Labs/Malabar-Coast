@@ -86,6 +86,9 @@ body:has(.adminShell) { margin: 0; background: #f2efe7; }
 .adminButton.isSecondary:hover { background: rgba(19,32,28,.06); }
 .adminTextButton { align-self: end; padding: .9rem .3rem; color: var(--admin-muted) !important; font-size: .64rem; text-decoration: underline !important; }
 .adminLive { display: inline-flex; gap: .55rem; align-items: center; color: var(--admin-muted); font-size: .64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.adminRealtimeState { margin: .85rem 0 .15rem; }
+.adminLive.is-connecting i { background: var(--admin-amber); box-shadow: 0 0 .8rem rgba(173,121,57,.55); }
+.adminLive.is-unavailable i { background: #a75d59; box-shadow: none; }
 
 /* Metrics and panels */
 .adminMetrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .85rem; margin: 1.5rem 0; }

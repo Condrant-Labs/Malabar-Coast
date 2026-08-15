@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "tsx --test tests/**/*.test.ts",
+    "test:realtime": "tsx scripts/test-realtime.ts",
     "admin:hash": "node scripts/hash-admin-password.mjs"
   },
   "dependencies": {

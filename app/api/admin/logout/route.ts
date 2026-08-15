@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clearAdminSession, getAdminSession, verifyAdminCsrf } from "../../../lib/admin-auth";
+import { clearAdminSession, getAdminSession, recordAdminLogout, verifyAdminCsrf } from "../../../lib/admin-auth";
 import { configuredSiteOrigin, isTrustedOrigin, readLimitedFormData } from "../../../lib/security";
 
 export const runtime = "nodejs";
@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     return new NextResponse("Forbidden", { status: 403, headers: { "Cache-Control": "no-store" } });
   }
 
+  await recordAdminLogout(session);
   const response = NextResponse.redirect(new URL("/admin/login", configuredSiteOrigin(request)), 303);
   clearAdminSession(response);
   response.headers.set("Cache-Control", "no-store, max-age=0");

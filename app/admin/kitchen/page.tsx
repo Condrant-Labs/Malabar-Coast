@@ -18,14 +18,14 @@ const lanes: { status: OrderStatus; title: string; detail: string }[] = [
 ];
 
 export default async function AdminKitchenPage() {
-  const session = await getAdminSession();
+  const session = await getAdminSession("kitchen:read");
   if (!session) redirect("/admin/login");
   const orders = await listOrdersForReport(undefined, undefined, { statuses: activeOrderStatuses });
   const active = orders.filter((order) => lanes.some((lane) => lane.status === order.status));
   const realtimeUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const realtimePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 
-  return <AdminFrame active="/admin/kitchen" csrfToken={session.csrfToken}>
+  return <AdminFrame active="/admin/kitchen" session={session}>
     <AdminPageHeader eyebrow="Live fulfilment" title="The kitchen, in motion." description="A single board for new, making, ready and delivery orders. Payment status remains provider-verified." actions={<><RealtimePageRefresh supabaseUrl={realtimeUrl} publishableKey={realtimePublishableKey} /><Link className="adminButton isSecondary" href="/admin/orders">Order register</Link></>} />
     {active.length ? <section className="adminKitchenBoard" aria-label="Kitchen order board">{lanes.map((lane) => {
       const laneOrders = active.filter((order) => order.status === lane.status).sort((a, b) => a.requestedTime.localeCompare(b.requestedTime));

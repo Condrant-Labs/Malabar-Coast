@@ -8,12 +8,10 @@ export function getSupabaseChannelClient(): ChannelClient {
   if (supabaseClient) return supabaseClient;
 
   // This module is used by server-side payment handlers. Prefer the existing
-  // server credentials so a client never needs permission to publish payment
-  // events. The publishable key remains a local-development fallback.
+  // server credentials so a public client can never publish payment events.
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY
-    || process.env.SUPABASE_SERVICE_ROLE_KEY
-    || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) throw new Error("Supabase Realtime configuration is missing.");
 

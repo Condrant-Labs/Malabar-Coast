@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAdminSession, isAdminConfigured } from "../../lib/admin-auth";
+import { checkAdminAuthSchema, getAdminSession } from "../../lib/admin-auth";
 import { isProductionOrderAccessConfigured } from "../../lib/order-access";
 import { isDurableOrderStorageConfigured } from "../../lib/order-store";
 import { isStripeConfigured } from "../../lib/payments/stripe";
@@ -9,11 +9,12 @@ import { AdminFrame, AdminPageHeader } from "../components/admin-ui";
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  const session = await getAdminSession();
+  const session = await getAdminSession("settings:read");
   if (!session) redirect("/admin/login");
+  const adminAuthReady = await checkAdminAuthSchema();
   const canonicalReady = (() => { try { return new URL(process.env.NEXT_PUBLIC_SITE_URL || "").protocol === "https:"; } catch { return false; } })();
   const checks = [
-    { label: "Administrator authentication", ready: isAdminConfigured(), detail: "Signed, HTTP-only session with scrypt password verification" },
+    { label: "Administrator authentication", ready: adminAuthReady, detail: "Supabase Auth identity, active staff profile, roles, session revocation and audit log" },
     { label: "Durable order database", ready: isDurableOrderStorageConfigured(), detail: "Supabase server-secret connection for private order access" },
     { label: "Customer order privacy", ready: isProductionOrderAccessConfigured(), detail: "Signed access grants prevent order-reference enumeration" },
     { label: "Stripe hosted checkout", ready: isStripeConfigured(), detail: "Hosted Checkout, authenticated queries and signed webhook reconciliation" },
@@ -23,7 +24,7 @@ export default async function AdminSettingsPage() {
   ];
   const ready = checks.filter((check) => check.ready).length;
 
-  return <AdminFrame active="/admin/settings" csrfToken={session.csrfToken}>
+  return <AdminFrame active="/admin/settings" session={session}>
     <AdminPageHeader eyebrow="Deployment and security" title="A system you can trust." description="A read-only operational view of the environment contract. Secrets are never rendered in this portal." />
     <section className="adminSystemScore"><div><span>Production readiness</span><strong>{ready}<small> / {checks.length}</small></strong><p>{ready === checks.length ? "All required controls report ready." : `${checks.length - ready} control${checks.length - ready === 1 ? " needs" : "s need"} deployment attention.`}</p></div><i style={{ "--score": `${ready / checks.length * 100}%` } as React.CSSProperties}><b>{Math.round(ready / checks.length * 100)}%</b></i></section>
     <section className="adminPanel">

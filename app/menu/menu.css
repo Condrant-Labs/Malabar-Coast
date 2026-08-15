@@ -50,7 +50,7 @@
 .menuPrologue h1 {
   margin: 0;
   font-family: "Bodoni 72", Didot, "Iowan Old Style", serif;
-  font-size: clamp(5.2rem, 11vw, 12rem);
+  font-size: clamp(4.8rem, 9vw, 9rem);
   font-weight: 400;
   line-height: .72;
   letter-spacing: -.065em;
@@ -149,13 +149,13 @@
 
 .portMeta { display: flex; justify-content: space-between; margin-bottom: clamp(2rem, 6vh, 4rem); color: rgba(238,229,210,.46); font-size: .52rem; letter-spacing: .17em; text-transform: uppercase; }
 .portRegion, .courseLabel { margin: 0; color: var(--menu-brass); font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; }
-.portContent h2 { margin: .45rem 0 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(5rem, 8vw, 9rem); font-weight: 400; line-height: .8; letter-spacing: -.055em; text-transform: uppercase; }
+.portContent h2 { margin: .45rem 0 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4.5rem, 7vw, 7.5rem); font-weight: 400; line-height: .8; letter-spacing: -.055em; text-transform: uppercase; }
 .dishRule { width: 100%; height: 1px; margin: clamp(1.5rem, 4vh, 2.8rem) 0; background: linear-gradient(90deg, var(--menu-brass), rgba(199,155,85,.08)); }
 .portContent h3 { max-width: 30rem; margin: .65rem 0 0; font-family: "Iowan Old Style", Georgia, serif; font-size: clamp(1.8rem, 3vw, 3.2rem); font-weight: 400; line-height: 1.02; }
 .dishDescription { max-width: 31rem; margin: 1.25rem 0 0; color: rgba(238,229,210,.72); font-family: "Iowan Old Style", Georgia, serif; font-size: clamp(.88rem, 1vw, 1rem); line-height: 1.58; }
 .dishFooter { display: flex; align-items: center; gap: .55rem; margin-top: 1.5rem; }
 .dishFooter strong { margin-right: .6rem; font-family: "Bodoni 72", Didot, serif; font-size: 1.45rem; font-weight: 400; }
-.dishFooter span { padding: .42rem .6rem; border: 1px solid rgba(238,229,210,.25); color: var(--menu-paper); font-size: .49rem; letter-spacing: .14em; text-transform: uppercase; }
+.dishFooter .dishAttribute { padding: .42rem .6rem; border: 1px solid rgba(238,229,210,.25); color: var(--menu-paper); font-size: .52rem; letter-spacing: .12em; text-transform: uppercase; }
 .portContent .addToOrder { margin-top: 1.25rem; }
 
 .routeNavigator {
@@ -201,19 +201,29 @@
 .manifestCard ul { display: flex; flex-direction: column; gap: 1.4rem; margin: 0; padding: 0; list-style: none; }
 .manifestCard li { display: flex; justify-content: space-between; gap: 1.25rem; }
 .manifestCard li .manifestDish { display: flex; flex-direction: column; gap: .22rem; }
-.manifestCard li strong { font-family: "Iowan Old Style", Georgia, serif; font-size: 1rem; font-weight: 600; }
-.manifestCard li span { color: rgba(16,32,28,.58); font-size: .65rem; letter-spacing: .04em; }
-.manifestCard li small { max-width: 28rem; color: rgba(16,32,28,.46); font-size: .5rem; line-height: 1.45; text-transform: uppercase; }
+.manifestCard li strong { font-family: "Iowan Old Style", Georgia, serif; font-size: 1.16rem; font-weight: 600; }
+.manifestCard li .manifestDish > span { color: rgba(16,32,28,.66); font-size: .76rem; letter-spacing: .02em; line-height: 1.45; }
+.manifestCard li small { max-width: 28rem; color: rgba(16,32,28,.54); font-size: .56rem; line-height: 1.45; text-transform: uppercase; }
+.manifestDishMeta { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .7rem; margin-top: .38rem; }
+.dietaryMarker { --dietary-color: #4d8f4f; display: inline-flex; align-items: center; gap: .48rem; width: fit-content; color: #173a20; font-size: .61rem; font-weight: 700; letter-spacing: .04em; line-height: 1.2; }
+.dietaryMarker i { display: grid; width: 1.25rem; height: 1.25rem; flex: 0 0 1.25rem; place-items: center; border: 2px solid var(--dietary-color); background: rgba(255,255,255,.32); }
+.dietaryMarker i::after { content: ""; width: .48rem; height: .48rem; border-radius: 50%; background: var(--dietary-color); }
+.dietaryMarker.is-vegetarian { --dietary-color: #e47d24; color: #7c3c0b; }
+.dietaryMarker.is-nonVegetarian { --dietary-color: #c73e36; color: #7e201b; }
+.dietaryMarker.isCompact { font-size: .54rem; }
+.dishFooter .dietaryMarker { color: var(--menu-ivory); }
+.dishFooter .dietaryMarker i { background: rgba(7,19,16,.35); }
 .manifestCard li b { font-family: "Bodoni 72", Didot, serif; font-size: 1rem; font-weight: 400; }
 .manifestOrder { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; flex: 0 0 8rem; }
 .dietaryKey { display: flex; align-items: center; gap: 1.4rem; padding-top: 2.5rem; color: rgba(16,32,28,.65); font-size: .58rem; letter-spacing: .06em; text-transform: uppercase; }
-.dietaryKey span { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.dietaryKey > span { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.dietaryKey .dietaryMarker { color: #10201c; }
 .dietaryKey b { display: grid; place-items: center; min-width: 1.7rem; height: 1.7rem; border: 1px solid rgba(16,32,28,.45); border-radius: 50%; font-size: .48rem; }
 .dietaryKey p { margin: 0 0 0 auto; text-align: right; text-transform: none; }
 
-.menuFooter { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 3rem; min-height: 52vh; padding: clamp(5rem, 8vw, 8rem) clamp(1.25rem, 6vw, 7rem) 3rem; background: #071310; }
+.menuFooter { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 3rem; min-height: 42vh; padding: clamp(4rem, 6vw, 6rem) clamp(1.25rem, 6vw, 7rem) 2.5rem; background: #071310; }
 .menuFooter p { margin: 0 0 1rem; color: var(--menu-brass); font-size: .58rem; letter-spacing: .22em; text-transform: uppercase; }
-.menuFooter h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4.5rem, 10vw, 11rem); font-weight: 400; line-height: .78; letter-spacing: -.06em; text-transform: uppercase; }
+.menuFooter h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(4rem, 8vw, 8rem); font-weight: 400; line-height: .8; letter-spacing: -.055em; text-transform: uppercase; }
 .menuFooterActions { display: flex; flex-direction: column; gap: .7rem; }
 .menuFooterActions a { display: inline-flex; justify-content: space-between; align-items: center; gap: 2rem; min-height: 3.5rem; padding: 0 1.2rem; border: 1px solid rgba(238,229,210,.45); font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; transition: background .2s, color .2s; }
 .menuFooterActions a:hover { background: var(--menu-ivory); color: var(--menu-ink); }
@@ -223,7 +233,7 @@
 
 @media (max-width: 820px) {
   .menuPrologue { padding-inline: 1.15rem; }
-  .menuPrologue h1 { font-size: clamp(4.1rem, 20.5vw, 6.5rem); line-height: .77; }
+  .menuPrologue h1 { font-size: clamp(3.8rem, 17vw, 5.8rem); line-height: .79; }
   .prologueCopy { max-width: 21rem; font-size: .9rem; }
   .prologueCoordinates { right: 1rem; bottom: 1.4rem; left: 1rem; }
   .menuVoyage { height: auto; }
@@ -250,8 +260,8 @@
   .manifestOrder { flex-basis: 6.5rem; }
   .dietaryKey { flex-wrap: wrap; }
   .dietaryKey p { flex-basis: 100%; margin: .5rem 0 0; text-align: left; line-height: 1.5; }
-  .menuFooter { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; min-height: 70svh; }
-  .menuFooter h2 { font-size: 17vw; }
+  .menuFooter { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; min-height: 52svh; }
+  .menuFooter h2 { font-size: clamp(3.6rem, 15vw, 5.4rem); }
   .menuFooterActions a { justify-content: space-between; }
   .menuFooter small { margin-top: 2rem; }
 }
@@ -279,7 +289,7 @@
   .manifestCard li { gap: .8rem; }
   .manifestDish { min-width: 0; }
   .manifestOrder { flex-basis: 6.4rem; }
-  .menuFooter { min-height: 56svh; }
+  .menuFooter { min-height: 48svh; }
 }
 
 @media (max-width: 900px), (pointer: coarse) {

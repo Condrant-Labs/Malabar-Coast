@@ -36,22 +36,41 @@ export function RealtimePageRefresh({
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const scheduleRefresh = (payload: BroadcastPayload) => {
+    const pendingRequests = new Set<string>();
+    const scheduleRefresh = async (payload: BroadcastPayload) => {
       const orderId = typeof payload.orderId === "string" ? payload.orderId : "";
-      if (!orderIdPattern.test(orderId)) return;
+      if (!orderIdPattern.test(orderId) || pendingRequests.has(orderId)) return;
 
-      playOrderNotificationSound();
-      if (refreshTimer.current) clearTimeout(refreshTimer.current);
-      refreshTimer.current = setTimeout(() => {
-        router.refresh();
-        refreshTimer.current = null;
-      }, 250);
+      // Broadcast channels use the public Supabase client in the browser. Treat the
+      // payload only as a hint and authenticate the order through our admin endpoint
+      // before making noise or refreshing the page.
+      pendingRequests.add(orderId);
+      try {
+        const response = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const body = await response.json() as { order?: { id?: string } };
+        if (body.order?.id !== orderId) return;
+
+        playOrderNotificationSound();
+        if (refreshTimer.current) clearTimeout(refreshTimer.current);
+        refreshTimer.current = setTimeout(() => {
+          router.refresh();
+          refreshTimer.current = null;
+        }, 250);
+      } catch (error) {
+        console.error("Could not verify the changed order.", error);
+      } finally {
+        pendingRequests.delete(orderId);
+      }
     };
 
     const channel = supabase
       .channel("admin-orders")
       .on("broadcast", { event: "orders-changed" }, ({ payload }) => {
-        scheduleRefresh(payload as BroadcastPayload);
+        void scheduleRefresh(payload as BroadcastPayload);
       })
       .subscribe((status, error) => {
         if (status === "SUBSCRIBED") setConnection("live");
@@ -65,6 +84,7 @@ export function RealtimePageRefresh({
       window.removeEventListener("pointerdown", armSound);
       window.removeEventListener("keydown", armSound);
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
+      pendingRequests.clear();
       void supabase.removeChannel(channel);
     };
   }, [publishableKey, router, supabaseUrl]);

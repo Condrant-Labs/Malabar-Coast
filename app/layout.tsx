@@ -5,11 +5,11 @@ import "./menu/menu.css";
 import "./editorial.css";
 import "./order.css";
 import "./faq/faq.css";
+import "./legal.css";
 import { SiteHeader } from "./components/site-header";
 import { SiteFooter } from "./components/site-footer";
 import { SmoothScroll } from "./components/smooth-scroll";
 import { CartProvider } from "./components/cart-provider";
-import { CustomCursor } from "./components/custom-cursor";
 import { JsonLd } from "./components/json-ld";
 import { absoluteUrl, site } from "./lib/site";
 
@@ -89,7 +89,7 @@ const globalSchema = {
       name: site.name,
       legalName: site.legalName,
       url: site.url,
-      logo: absoluteUrl("/logo-white.png"),
+      logo: absoluteUrl("/malabar af.svg"),
       image: [
         absoluteUrl("/restaurant/dining-room.png"),
         absoluteUrl("/menu/calicut-pepper-prawns.png"),
@@ -143,7 +143,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <JsonLd data={globalSchema} />
         <SmoothScroll />
-        <CustomCursor />
         <CartProvider>
           <SiteHeader />
           {children}

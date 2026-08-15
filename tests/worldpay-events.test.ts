@@ -65,6 +65,7 @@ test("Worldpay Event-Signature verifies the untouched body and supports key rota
 
 test("payment query outcomes only map explicit terminal Worldpay states", () => {
   assert.equal(resolveWorldpayQueryPaymentStatus("authorizationSucceeded"), "paid");
+  assert.equal(resolveWorldpayQueryPaymentStatus("settlementRequestSubmitted"), "paid");
   assert.equal(resolveWorldpayQueryPaymentStatus("authorizationRefused"), "failed");
   assert.equal(resolveWorldpayQueryPaymentStatus("authorizationRequested"), undefined);
   assert.equal(resolveWorldpayQueryPaymentStatus("someFutureSucceededState"), undefined);

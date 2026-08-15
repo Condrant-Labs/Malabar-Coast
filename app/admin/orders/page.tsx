@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "../../lib/admin-auth";
+import { adminCan } from "../../lib/admin-permissions";
 import { listOrdersForReport } from "../../lib/order-store";
 import { orderStatusLabels, type OrderStatus } from "../../lib/orders";
 import { AdminFrame, AdminPageHeader, OrderTable } from "../components/admin-ui";
@@ -12,7 +13,7 @@ const pageSize = 25;
 type Search = { q?: string; status?: string; fulfilment?: string; provider?: string; page?: string };
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const session = await getAdminSession();
+  const session = await getAdminSession("orders:read");
   if (!session) redirect("/admin/login");
   const query = await searchParams;
   const q = (query.q || "").trim().toLowerCase().slice(0, 160);
@@ -46,7 +47,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const realtimeUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const realtimePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
 
-  return <AdminFrame active="/admin/orders" csrfToken={session.csrfToken}>
+  return <AdminFrame active="/admin/orders" session={session}>
     <AdminPageHeader eyebrow="Order management" title="Every order, under control." description="Search customer and dish details, isolate exceptions, and advance paid orders without leaving the list." actions={<><RealtimePageRefresh supabaseUrl={realtimeUrl} publishableKey={realtimePublishableKey} /><Link className="adminButton" href="/admin/kitchen">Kitchen board</Link></>} />
     <section className="adminPanel adminFilterPanel">
       <form method="get" action="/admin/orders" className="adminFilters">
@@ -60,7 +61,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     </section>
     <section className="adminPanel">
       <div className="adminPanelHeading"><div><p>Order register</p><h2>{filtered.length} matching order{filtered.length === 1 ? "" : "s"}</h2></div><span>Newest first · complete register</span></div>
-      <OrderTable orders={orders} csrfToken={session.csrfToken} returnTo={returnTo} />
+      <OrderTable orders={orders} csrfToken={adminCan(session.role, "orders:transition") ? session.csrfToken : undefined} returnTo={returnTo} />
       {pages > 1 && <nav className="adminPagination" aria-label="Order pages">
         <Link href={pageHref(Math.max(1, currentPage - 1))} aria-disabled={currentPage === 1}>Previous</Link><span>Page {currentPage} of {pages}</span><Link href={pageHref(Math.min(pages, currentPage + 1))} aria-disabled={currentPage === pages}>Next</Link>
       </nav>}

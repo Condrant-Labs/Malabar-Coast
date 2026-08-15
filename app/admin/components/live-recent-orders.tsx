@@ -21,7 +21,7 @@ export function LiveRecentOrders({
   publishableKey,
 }: {
   initialOrders: OrderRecord[];
-  csrfToken: string;
+  csrfToken?: string;
   supabaseUrl: string;
   publishableKey: string;
 }) {

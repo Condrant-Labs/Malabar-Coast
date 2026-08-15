@@ -1,8 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
-import { getAdminSession, isAdminConfigured } from "../../../lib/admin-auth";
+import { checkAdminAuthSchema, getAdminSession } from "../../../lib/admin-auth";
 import { checkDurableOrderStorage, isDurableOrderStorageConfigured } from "../../../lib/order-store";
 import { isProductionOrderAccessConfigured } from "../../../lib/order-access";
-import { isStripeConfigured } from "../../../lib/payments/stripe";
+import { isStripeProductionReady } from "../../../lib/payments/stripe";
 import { isWorldpayProductionReady } from "../../../lib/payments/worldpay";
 import { checkRateLimit, getClientAddress, noStoreJson } from "../../../lib/security";
 
@@ -29,7 +29,10 @@ export async function GET(request: Request) {
   }
 
   const storageConfigured = isDurableOrderStorageConfigured();
-  const storageReachable = storageConfigured ? await checkDurableOrderStorage() : false;
+  const [storageReachable, adminAuthReachable] = await Promise.all([
+    storageConfigured ? checkDurableOrderStorage() : Promise.resolve(false),
+    checkAdminAuthSchema(),
+  ]);
   const canonicalHttps = (() => {
     try { return new URL(process.env.NEXT_PUBLIC_SITE_URL || "").protocol === "https:"; } catch { return false; }
   })();
@@ -37,8 +40,9 @@ export async function GET(request: Request) {
     canonicalHttps,
     durableStorage: storageConfigured && storageReachable,
     orderAccessSigning: isProductionOrderAccessConfigured(),
-    administratorAccess: isAdminConfigured(),
-    paymentProvider: isStripeConfigured() || isWorldpayProductionReady(),
+    administratorAccess: adminAuthReachable,
+    stripePayments: isStripeProductionReady(),
+    worldpayPayments: isWorldpayProductionReady(),
   };
   const ready = Object.values(checks).every(Boolean);
   const body: Record<string, unknown> = { status: ready ? "ready" : "not_ready", time: new Date().toISOString() };

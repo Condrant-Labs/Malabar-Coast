@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { displayDate, money } from "../../../lib/admin-reporting";
 import { getAdminSession } from "../../../lib/admin-auth";
+import { adminCan } from "../../../lib/admin-permissions";
 import { getOrder } from "../../../lib/order-store";
 import { getAllowedAdminTransitions, inferPaymentStatus, orderStatusLabels, paymentStatusLabels } from "../../../lib/orders";
 import { isValidOrderId } from "../../../lib/security";
@@ -10,7 +11,7 @@ import { AdminFrame, AdminPageHeader, StatusBadge } from "../../components/admin
 export const dynamic = "force-dynamic";
 
 export default async function AdminOrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ update?: string; notes?: string }> }) {
-  const session = await getAdminSession();
+  const session = await getAdminSession("orders:read");
   if (!session) redirect("/admin/login");
   const { id } = await params;
   if (!isValidOrderId(id)) notFound();
@@ -20,8 +21,10 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
   const transitions = getAllowedAdminTransitions(order);
   const paymentStatus = inferPaymentStatus(order);
   const units = order.lines.reduce((total, line) => total + line.quantity, 0);
+  const canTransition = adminCan(session.role, "orders:transition");
+  const canWriteNotes = adminCan(session.role, "orders:notes");
 
-  return <AdminFrame active="/admin/orders" csrfToken={session.csrfToken}>
+  return <AdminFrame active="/admin/orders" session={session}>
     <AdminPageHeader eyebrow="Order detail" title={order.id.slice(-12).toUpperCase()} description={`${order.customer.name} · ${order.fulfilment} · requested ${order.requestedTime.replace("T", " ")}`} actions={<><StatusBadge status={order.status} /><Link className="adminButton isSecondary" href="/admin/orders">Back to orders</Link></>} />
     {query.update === "success" && <div className="adminAlert isSuccess" role="status">Order advanced successfully. The change is now in its audit history.</div>}
     {query.update === "rejected" && <div className="adminAlert isError" role="alert">That change was rejected because the live state changed or the transition is not allowed.</div>}
@@ -47,7 +50,7 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
         <article className="adminPanel adminOrderSummary">
           <div className="adminPanelHeading"><div><p>Operations</p><h2>Advance order</h2></div></div>
           {paymentStatus !== "paid" && <div className="adminAlert isError" role="alert">Fulfilment is locked until a signed event or authenticated provider query confirms the payment.</div>}
-          {transitions.length ? <div className="adminTransitions">{transitions.map((status) => <form action={`/api/admin/orders/${order.id}/status`} method="post" key={status}><input type="hidden" name="csrf" value={session.csrfToken} /><input type="hidden" name="status" value={status} /><button type="submit">Move to {orderStatusLabels[status]} <span aria-hidden="true">→</span></button></form>)}</div> : paymentStatus === "paid" && <p className="adminSubtle">No further fulfilment transition is available for this order.</p>}
+          {canTransition && transitions.length ? <div className="adminTransitions">{transitions.map((status) => <form action={`/api/admin/orders/${order.id}/status`} method="post" key={status}><input type="hidden" name="csrf" value={session.csrfToken} /><input type="hidden" name="status" value={status} /><button type="submit">Move to {orderStatusLabels[status]} <span aria-hidden="true">→</span></button></form>)}</div> : paymentStatus === "paid" && <p className="adminSubtle">{canTransition ? "No further fulfilment transition is available for this order." : "Your role has read-only access to fulfilment status."}</p>}
           <dl>
             <div><dt>Payment</dt><dd>{paymentStatusLabels[paymentStatus]}</dd></div><div><dt>Provider</dt><dd className="adminCapitalize">{order.provider}</dd></div>
             <div><dt>Provider reference</dt><dd>{order.providerReference || "Awaiting provider"}</dd></div><div><dt>Provider outcome</dt><dd>{order.providerOutcome || "Awaiting provider"}</dd></div>
@@ -62,10 +65,10 @@ export default async function AdminOrderPage({ params, searchParams }: { params:
           {order.deliveryAddress && <address className="adminDeliveryAddress"><span>{order.deliveryAddress.line1}</span>{order.deliveryAddress.line2 && <span>{order.deliveryAddress.line2}</span>}<span>{order.deliveryAddress.city}</span><span>{order.deliveryAddress.postcode}</span></address>}
         </article>
 
-        <article className="adminPanel adminNotesPanel">
+        {canWriteNotes && <article className="adminPanel adminNotesPanel">
           <div className="adminPanelHeading"><div><p>Private to staff</p><h2>Operations note</h2></div></div>
           <form action={`/api/admin/orders/${order.id}/notes`} method="post"><input type="hidden" name="csrf" value={session.csrfToken} /><label htmlFor="adminNotes">Kitchen, hand-off or customer-service context</label><textarea id="adminNotes" name="adminNotes" defaultValue={order.adminNotes || ""} maxLength={2000} rows={5} placeholder="Add a clear internal note…" /><button className="adminButton" type="submit">Save note</button></form>
-        </article>
+        </article>}
       </aside>
     </section>
   </AdminFrame>;

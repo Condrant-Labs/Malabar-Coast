@@ -9,6 +9,7 @@ import {
 } from "../../../lib/payments/worldpay-events";
 import { noStoreJson, readLimitedText, RequestBodyTooLargeError, isValidOrderId } from "../../../lib/security";
 import { inferPaymentStatus } from "@/app/lib/orders";
+import { retrieveWorldpayPaymentIdentityForOrder } from "../../../lib/payments/worldpay";
 
 export const runtime = "nodejs";
 
@@ -51,18 +52,57 @@ export async function POST(request: Request) {
   const paymentStatus = resolveWorldpayPaymentStatus(eventType);
   if (paymentStatus) {
     const orderBefore = await getOrder(orderId);
+    if (!orderBefore || orderBefore.provider !== "worldpay") {
+      console.warn("Rejected a Worldpay event for an unknown order.", eventId);
+      return noStoreJson({ received: true });
+    }
+
+    const eventAmount = resolveWorldpayAmount(details, event);
+    const eventCurrency = resolveWorldpayCurrency(details, event);
+    const identityRequired = ["paid", "partially_refunded", "refunded", "disputed", "reversed"].includes(paymentStatus);
+    if (identityRequired) {
+      const amountMatches = paymentStatus === "partially_refunded"
+        ? eventAmount !== undefined && eventAmount > 0 && eventAmount < orderBefore.totalPence
+        : paymentStatus === "paid" || paymentStatus === "refunded"
+          ? eventAmount === orderBefore.totalPence
+          : eventAmount !== undefined && eventAmount > 0 && eventAmount <= orderBefore.totalPence;
+      if (!amountMatches || eventCurrency?.toUpperCase() !== orderBefore.currency) {
+        console.warn("Rejected a Worldpay event with an invalid value.", eventId);
+        return noStoreJson({ received: true });
+      }
+    }
+
+    let verifiedReference = providerReference || orderBefore.providerReference;
+    if (identityRequired && !verifiedReference) {
+      try {
+        const identity = await retrieveWorldpayPaymentIdentityForOrder(orderBefore);
+        verifiedReference = identity?.providerReference;
+      } catch (error) {
+        console.error("Worldpay webhook payment identity lookup failed.", error instanceof Error ? error.name : "UnknownError");
+        return noStoreJson({ error: "Payment verification is temporarily unavailable." }, { status: 503 });
+      }
+      // Payment Queries can lag the signed event. A retry is safer than acknowledging
+      // a paid event that the identity-bound database contract must reject.
+      if (!verifiedReference) {
+        return noStoreJson({ error: "Payment identity is not available yet." }, { status: 503 });
+      }
+    }
+
     const applied = await applyPaymentEvent({
       provider: "worldpay",
       eventId,
       orderId,
       paymentStatus,
       outcome: eventType,
-      providerReference,
-      amountPence: resolveWorldpayAmount(details, event),
-      currency: resolveWorldpayCurrency(details, event),
+      providerReference: verifiedReference,
+      // The database stores and verifies the original order value. The signed event
+      // amount is separately checked above because partial-refund events carry only
+      // the refunded portion rather than the original checkout total.
+      amountPence: identityRequired ? orderBefore.totalPence : undefined,
+      currency: identityRequired ? orderBefore.currency : undefined,
     });
     if (!applied) console.warn("Rejected a Worldpay event that did not match its stored order.", eventId);
-    if (applied && paymentStatus==="paid" && orderBefore && inferPaymentStatus(orderBefore)!=="paid"){
+    if (applied && paymentStatus === "paid" && inferPaymentStatus(orderBefore) !== "paid") {
       await publishPaymentCompletionEvent(orderId);
     }
   }

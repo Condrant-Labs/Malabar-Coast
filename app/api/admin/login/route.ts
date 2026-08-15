@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { isAdminConfigured, setAdminSession, verifyAdminCredentials } from "../../../lib/admin-auth";
+import { authenticateSupabaseAdmin, isAdminConfigured, setAdminSession } from "../../../lib/admin-auth";
 import { checkRateLimit, configuredSiteOrigin, getClientAddress, isTrustedOrigin, readLimitedFormData } from "../../../lib/security";
 
 export const runtime = "nodejs";
@@ -19,25 +20,27 @@ export async function POST(request: Request) {
   // Per-address throttling alone does not bound a distributed guessing campaign, so the
   // single administrator account also carries its own ceiling across every source.
   const perAddress = checkRateLimit("admin-login", getClientAddress(request), 5, 15 * 60_000);
-  const perAccount = checkRateLimit("admin-login-account", "administrator", 30, 15 * 60_000);
-  if (!perAddress.allowed || !perAccount.allowed) {
-    const response = loginRedirect(request, "rate-limit");
-    response.headers.set("Retry-After", String(Math.max(perAddress.retryAfterSeconds, perAccount.retryAfterSeconds)));
-    return response;
-  }
-
   let form: URLSearchParams;
   try {
     form = await readLimitedFormData(request, 16_000);
   } catch {
     return loginRedirect(request, "request");
   }
-  const username = String(form.get("username") || "").slice(0, 160);
+  const email = String(form.get("email") || "").trim().toLowerCase().slice(0, 254);
   const password = String(form.get("password") || "").slice(0, 256);
-  if (!verifyAdminCredentials(username, password)) return loginRedirect(request, "credentials");
+  const accountBucket = createHash("sha256").update(email || "missing").digest("base64url").slice(0, 24);
+  const perAccount = checkRateLimit("admin-login-account", accountBucket, 30, 15 * 60_000);
+  if (!perAddress.allowed || !perAccount.allowed) {
+    const response = loginRedirect(request, "rate-limit");
+    response.headers.set("Retry-After", String(Math.max(perAddress.retryAfterSeconds, perAccount.retryAfterSeconds)));
+    return response;
+  }
+
+  const result = await authenticateSupabaseAdmin(email, password);
+  if (!result.ok) return loginRedirect(request, result.reason === "unavailable" ? "service" : "credentials");
 
   const response = NextResponse.redirect(new URL("/admin", configuredSiteOrigin(request)), 303);
-  setAdminSession(response);
+  setAdminSession(response, result.identity);
   response.headers.set("Cache-Control", "no-store, max-age=0");
   return response;
 }

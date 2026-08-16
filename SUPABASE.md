@@ -4,7 +4,7 @@ This project uses one Supabase project for durable order storage, payment-event 
 
 ## Required environment values
 
-| Variable | Where used | Requirement |
+| Variable | Where used | Requirement|
 | --- | --- | --- |
 | `SUPABASE_URL` | Server database and Auth requests | Project URL from Supabase Connect. HTTPS in production. |
 | `SUPABASE_SECRET_KEY` | Server-only PostgREST and RPC access | Preferred `sb_secret_...` key. Never expose it to a browser. |

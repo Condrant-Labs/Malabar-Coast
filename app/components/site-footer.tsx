@@ -1,9 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-
-const GOOGLE_MAPS_URL =
-  "https://www.google.com/maps/search/?api=1&query=33+Main+Street+Holytown+North+Lanarkshire+ML1+4TH";
-const INSTAGRAM_URL = "https://www.instagram.com/malabarcoastuk";
+import {Fragment} from "react";
+import type { SiteSettings } from "@/sanity/lib/site";
 
 function InstagramIcon() {
   return (
@@ -15,57 +13,49 @@ function InstagramIcon() {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({settings}: {settings: SiteSettings}) {
+  const instagram = settings.socialLinks.find((link) => link.platform.toLowerCase() === "instagram") ?? settings.socialLinks[0];
   return (
-    <footer className="siteFooter" aria-label="Malabar Coast footer">
+    <footer className="siteFooter" aria-label={`${settings.restaurantName} footer`}>
       <div className="siteFooterLead">
         <div className="siteFooterIntro">
           <p>Stay close to the coast</p>
           <h2>Our socials</h2>
           <span>Follow the kitchen, new dishes and moments from Malabar Coast.</span>
-          <a className="siteFooterInstagram" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="Follow Malabar Coast on Instagram">
+          {instagram && <a className="siteFooterInstagram" href={instagram.url} target="_blank" rel="noreferrer" aria-label={`Follow ${settings.restaurantName} on ${instagram.platform}`}>
             <i><InstagramIcon /></i>
-            <span><small>Follow us on Instagram</small><strong>@malabarcoastuk</strong></span>
+            <span><small>Follow us on {instagram.platform}</small><strong>{instagram.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</strong></span>
             <b aria-hidden="true">↗</b>
-          </a>
+          </a>}
         </div>
 
         <nav className="siteFooterNav" aria-label="Footer navigation">
           <p className="siteFooterSectionLabel">Explore</p>
-          <Link href="/restaurant">Restaurant <span aria-hidden="true">↗</span></Link>
-          <Link href="/hall">Private hall <span aria-hidden="true">↗</span></Link>
-          <Link href="/menu">Menu <span aria-hidden="true">↗</span></Link>
-          <Link href="/story">Our story <span aria-hidden="true">↗</span></Link>
-          <Link href="/faq">Good to know <span aria-hidden="true">↗</span></Link>
-          <Link href="/#reservations">Plan your visit <span aria-hidden="true">↗</span></Link>
+          {settings.primaryNavigation.filter((link) => link.href !== "/checkout").map((link) => (
+            <Link href={link.href} key={`${link.href}-${link.label}`} target={link.openInNewTab ? "_blank" : undefined} rel={link.openInNewTab ? "noreferrer" : undefined}>{link.label} <span aria-hidden="true">↗</span></Link>
+          ))}
         </nav>
 
         <address className="siteFooterAddress">
           <p>Come ashore</p>
-          <strong>33 Main Street</strong>
-          <span>Holytown, North Lanarkshire</span>
-          <span>ML1 4TH · Scotland</span>
-          <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer">Get directions <span aria-hidden="true">↗</span></a>
+          <strong>{settings.address.streetAddress}</strong>
+          <span>{settings.address.locality}, {settings.address.region}</span>
+          <span>{settings.address.postalCode} · Scotland</span>
+          <a href={settings.mapUrl} target="_blank" rel="noreferrer">Get directions <span aria-hidden="true">↗</span></a>
         </address>
       </div>
 
       <div className="siteFooterBrand" aria-hidden="true">
         <i />
-        <Image src="/malabar af.svg" alt="" width={2383} height={2402} sizes="(max-width: 600px) 28vw, 7rem" />
+        <Image src={settings.logo.url} alt="" width={2383} height={2402} sizes="(max-width: 600px) 28vw, 7rem" />
         <i />
       </div>
 
       <div className="siteFooterLegal">
         <div aria-label="Legal and policy pages">
-          <Link href="/payments">Payments</Link>
-          <i>·</i>
-          <Link href="/returns">Returns</Link>
-          <i>·</i>
-          <Link href="/cookie">Cookie</Link>
-          <i>·</i>
-          <Link href="/privacy">Privacy</Link>
+          {settings.footerNavigation.map((link, index) => <Fragment key={`${link.href}-${link.label}`}><Link href={link.href}>{link.label}</Link>{index < settings.footerNavigation.length - 1 && <i>·</i>}</Fragment>)}
         </div>
-        <p>© Malabar Coast 2026. All rights reserved.</p>
+        <p>{settings.copyrightText}</p>
       </div>
 
       <a className="siteFooterCredit" href="https://codrantlabs.in/" target="_blank" rel="noreferrer" aria-label="Website made by Codrant Labs">

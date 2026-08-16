@@ -17,7 +17,7 @@ export const site = {
   shortDescription: "Southern Indian coastal cooking from Malabar to Scotland.",
   cuisine: ["South Indian", "Kerala", "Indian", "Seafood"],
   priceRange: "££",
-  lastUpdated: "2026-08-02",
+  lastUpdated: "2026-08-17",
   address: {
     streetAddress: "33 Main Street",
     addressLocality: "Holytown",

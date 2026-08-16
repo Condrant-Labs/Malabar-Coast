@@ -30,7 +30,7 @@ export default async function AdminPage() {
       eyebrow="Live restaurant overview"
       title="Good service starts here."
       description="A clear view of today’s kitchen, order demand and confirmed online sales."
-      actions={<><Link className="adminButton isSecondary" href="/admin/orders">All orders</Link><Link className="adminButton" href="/admin/kitchen">Open kitchen board</Link></>}
+      actions={<><Link className="adminButton isSecondary" href="/admin/content">Edit website</Link><Link className="adminButton isSecondary" href="/admin/orders">All orders</Link><Link className="adminButton" href="/admin/kitchen">Open kitchen board</Link></>}
     />
 
     <section className="adminMetrics" aria-label="Business summary">

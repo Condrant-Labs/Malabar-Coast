@@ -8,11 +8,12 @@ export type AdminPermission =
   | "orders:notes"
   | "kitchen:read"
   | "reports:read"
+  | "content:write"
   | "settings:read";
 
 const permissionsByRole: Record<AdminRole, readonly AdminPermission[]> = {
-  owner: ["dashboard:read", "orders:read", "orders:transition", "orders:notes", "kitchen:read", "reports:read", "settings:read"],
-  admin: ["dashboard:read", "orders:read", "orders:transition", "orders:notes", "kitchen:read", "reports:read", "settings:read"],
+  owner: ["dashboard:read", "orders:read", "orders:transition", "orders:notes", "kitchen:read", "reports:read", "content:write", "settings:read"],
+  admin: ["dashboard:read", "orders:read", "orders:transition", "orders:notes", "kitchen:read", "reports:read", "content:write", "settings:read"],
   manager: ["dashboard:read", "orders:read", "orders:transition", "orders:notes", "kitchen:read", "reports:read"],
   kitchen: ["dashboard:read", "orders:read", "orders:transition", "kitchen:read"],
   viewer: ["dashboard:read", "orders:read"],

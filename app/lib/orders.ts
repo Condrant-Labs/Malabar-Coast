@@ -1,4 +1,4 @@
-import { getMenuItem } from "./menu";
+import { getCheckoutMenuItem } from "@/sanity/lib/menu";
 
 export type PaymentProvider = "stripe" | "worldpay";
 export type FulfilmentMethod = "collection" | "delivery";
@@ -236,7 +236,7 @@ export function getDeliveryFeePence() {
   return Number.isInteger(configured) && configured >= 0 ? configured : 350;
 }
 
-export function validateCheckout(input: unknown) {
+export async function validateCheckout(input: unknown) {
   if (!input || typeof input !== "object") throw new CheckoutValidationError("Checkout details are missing.");
   const body = input as Record<string, unknown>;
   if (body.provider !== "stripe" && body.provider !== "worldpay") throw new CheckoutValidationError("Choose a payment method.");
@@ -270,11 +270,11 @@ export function validateCheckout(input: unknown) {
     combined.set(id, { id, quantity: nextQuantity, note: cleanText(candidate.note, "Dish note", 240, false) });
   }
 
-  const lines: OrderLine[] = Array.from(combined.values()).map((entry) => {
-    const item = getMenuItem(entry.id);
-    if (!item?.available) throw new CheckoutValidationError("A dish in your order is no longer available. Please review your order.");
+  const lines: OrderLine[] = await Promise.all(Array.from(combined.values()).map(async (entry) => {
+    const item = await getCheckoutMenuItem(entry.id);
+    if (!item?.available || !item.onlineOrdering || item.pricePence === null) throw new CheckoutValidationError("A dish in your order is no longer available. Please review your order.");
     return { menuItemId: item.id, name: item.name, unitPricePence: item.pricePence, quantity: entry.quantity, note: entry.note ?? "", lineTotalPence: item.pricePence * entry.quantity };
-  });
+  }));
   const totalUnits = lines.reduce((total, line) => total + line.quantity, 0);
   if (totalUnits > 100) throw new CheckoutValidationError("Your order contains too many items.");
 

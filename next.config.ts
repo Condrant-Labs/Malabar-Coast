@@ -27,6 +27,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
+  images: {
+    remotePatterns: [{protocol: "https", hostname: "cdn.sanity.io"}],
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getMenuItem, type MenuItem } from "../lib/menu";
+import { menuItems as fallbackMenuItems, type MenuItem } from "../lib/menu";
 import { CartDrawer } from "./cart-drawer";
 
 export type CartItem = { id: string; quantity: number; note?: string };
@@ -27,7 +27,7 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 const storageKey = "malabar-coast-cart-v1";
 
-function safeStoredCart(): CartItem[] {
+function safeStoredCart(catalogue: ReadonlyMap<string, MenuItem>): CartItem[] {
   try {
     const value = window.localStorage.getItem(storageKey);
     if (!value) return [];
@@ -36,7 +36,7 @@ function safeStoredCart(): CartItem[] {
     return parsed.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const candidate = item as Partial<CartItem>;
-      if (typeof candidate.id !== "string" || !getMenuItem(candidate.id)) return [];
+      if (typeof candidate.id !== "string" || !catalogue.get(candidate.id)?.onlineOrdering) return [];
       const quantity = Math.min(20, Math.max(1, Number(candidate.quantity) || 1));
       return [{ id: candidate.id, quantity, note: typeof candidate.note === "string" ? candidate.note.slice(0, 240) : "" }];
     });
@@ -45,19 +45,20 @@ function safeStoredCart(): CartItem[] {
   }
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({ children, catalogue = fallbackMenuItems }: { children: React.ReactNode; catalogue?: MenuItem[] }) {
   const pathname = usePathname();
+  const catalogueById = useMemo(() => new Map(catalogue.map((menuItem) => [menuItem.id, menuItem])), [catalogue]);
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isCartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setItems(safeStoredCart());
+      setItems(safeStoredCart(catalogueById));
       setHydrated(true);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [catalogueById]);
 
   useEffect(() => {
     if (hydrated) window.localStorage.setItem(storageKey, JSON.stringify(items));
@@ -83,15 +84,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [isCartOpen]);
 
   const addItem = useCallback((id: string) => {
-    const item = getMenuItem(id);
-    if (!item?.available) return;
+    const item = catalogueById.get(id);
+    if (!item?.available || !item.onlineOrdering || item.pricePence === null) return;
     setItems((current) => {
       const existing = current.find((line) => line.id === id);
       if (existing) return current.map((line) => line.id === id ? { ...line, quantity: Math.min(20, line.quantity + 1) } : line);
       return [...current, { id, quantity: 1 }];
     });
     setCartOpen(true);
-  }, []);
+  }, [catalogueById]);
 
   const removeItem = useCallback((id: string) => setItems((current) => current.filter((item) => item.id !== id)), []);
   const setQuantity = useCallback((id: string, quantity: number) => {
@@ -102,9 +103,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const lines = useMemo(() => items.flatMap((item) => {
-    const menuItem = getMenuItem(item.id);
-    return menuItem?.available ? [{ ...item, menuItem, lineTotalPence: menuItem.pricePence * item.quantity }] : [];
-  }), [items]);
+    const menuItem = catalogueById.get(item.id);
+    return menuItem?.available && menuItem.onlineOrdering && menuItem.pricePence !== null
+      ? [{ ...item, menuItem, lineTotalPence: menuItem.pricePence * item.quantity }]
+      : [];
+  }), [catalogueById, items]);
   const itemCount = lines.reduce((total, line) => total + line.quantity, 0);
   const subtotalPence = lines.reduce((total, line) => total + line.lineTotalPence, 0);
 

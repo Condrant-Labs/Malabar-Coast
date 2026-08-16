@@ -210,11 +210,17 @@
 .dietaryMarker i::after { content: ""; width: .48rem; height: .48rem; border-radius: 50%; background: var(--dietary-color); }
 .dietaryMarker.is-vegetarian { --dietary-color: #e47d24; color: #7c3c0b; }
 .dietaryMarker.is-nonVegetarian { --dietary-color: #c73e36; color: #7e201b; }
+.dietaryMarker.is-unconfirmed { --dietary-color: #8a6b22; color: #61480f; }
 .dietaryMarker.isCompact { font-size: .54rem; }
 .dishFooter .dietaryMarker { color: var(--menu-ivory); }
 .dishFooter .dietaryMarker i { background: rgba(7,19,16,.35); }
 .manifestCard li b { font-family: "Bodoni 72", Didot, serif; font-size: 1rem; font-weight: 400; }
 .manifestOrder { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; flex: 0 0 8rem; }
+.manifestSubheading { margin: 1rem 0 .3rem; color: #8c6028; font-size: .65rem; font-style: normal; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.manifestCard li:first-child .manifestSubheading { margin-top: 0; }
+.manifestCard li.isUnavailable { opacity: .58; }
+.menuNotices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-top: 2.5rem; padding: 1.5rem 0; border-top: 1px solid rgba(16,32,28,.2); border-bottom: 1px solid rgba(16,32,28,.2); }
+.menuNotices p { margin: 0; color: rgba(16,32,28,.72); font-size: .78rem; line-height: 1.6; }
 .dietaryKey { display: flex; align-items: center; gap: 1.4rem; padding-top: 2.5rem; color: rgba(16,32,28,.65); font-size: .58rem; letter-spacing: .06em; text-transform: uppercase; }
 .dietaryKey > span { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
 .dietaryKey .dietaryMarker { color: #10201c; }
@@ -258,6 +264,7 @@
   .manifestCard { padding: 2.75rem 0; }
   .manifestCard li { align-items: flex-start; }
   .manifestOrder { flex-basis: 6.5rem; }
+  .menuNotices { grid-template-columns: 1fr; }
   .dietaryKey { flex-wrap: wrap; }
   .dietaryKey p { flex-basis: 100%; margin: .5rem 0 0; text-align: left; line-height: 1.5; }
   .menuFooter { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; min-height: 52svh; }

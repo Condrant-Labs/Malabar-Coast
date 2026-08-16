@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "../components/json-ld";
-import { faqItems } from "../lib/faq";
 import { absoluteUrl, site } from "../lib/site";
+import {getFaqItems} from "@/sanity/lib/faq";
 
 export const metadata: Metadata = {
   title: "Restaurant FAQs",
@@ -18,28 +18,6 @@ export const metadata: Metadata = {
   },
 };
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "@id": `${absoluteUrl("/faq")}#faq`,
-  url: absoluteUrl("/faq"),
-  name: "Malabar Coast restaurant frequently asked questions",
-  datePublished: site.lastUpdated,
-  dateModified: site.lastUpdated,
-  inLanguage: "en-GB",
-  mainEntity: faqItems.map((item) => ({
-    "@type": "Question",
-    "@id": `${absoluteUrl("/faq")}#${item.id}`,
-    name: item.question,
-    datePublished: site.lastUpdated,
-    dateModified: site.lastUpdated,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: item.answer,
-    },
-  })),
-};
-
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -49,7 +27,26 @@ const breadcrumbSchema = {
   ],
 };
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const faqItems = await getFaqItems();
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/faq")}#faq`,
+    url: absoluteUrl("/faq"),
+    name: "Malabar Coast restaurant frequently asked questions",
+    datePublished: site.lastUpdated,
+    dateModified: site.lastUpdated,
+    inLanguage: "en-GB",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      "@id": `${absoluteUrl("/faq")}#${item.id}`,
+      name: item.question,
+      datePublished: site.lastUpdated,
+      dateModified: site.lastUpdated,
+      acceptedAnswer: {"@type": "Answer", text: item.answer},
+    })),
+  };
   return (
     <main className="faqPage">
       <JsonLd data={[faqSchema, breadcrumbSchema]} />

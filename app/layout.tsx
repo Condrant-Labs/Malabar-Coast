@@ -12,6 +12,8 @@ import { SmoothScroll } from "./components/smooth-scroll";
 import { CartProvider } from "./components/cart-provider";
 import { JsonLd } from "./components/json-ld";
 import { absoluteUrl, site } from "./lib/site";
+import { getMenuContent } from "@/sanity/lib/menu";
+import { getSiteSettings } from "@/sanity/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -137,16 +139,17 @@ const globalSchema = {
   ],
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [{items: currentMenuItems}, siteSettings] = await Promise.all([getMenuContent(), getSiteSettings()]);
   return (
     <html lang="en">
       <body>
         <JsonLd data={globalSchema} />
         <SmoothScroll />
-        <CartProvider>
-          <SiteHeader />
+        <CartProvider catalogue={currentMenuItems}>
+          <SiteHeader settings={siteSettings} />
           {children}
-          <SiteFooter />
+          <SiteFooter settings={siteSettings} />
         </CartProvider>
       </body>
     </html>

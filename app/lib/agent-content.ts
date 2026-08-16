@@ -26,7 +26,8 @@ Canonical site: ${site.url}
 - Cuisine: Kerala, South Indian, Indian coastal and seafood
 - Service shown on this site: dine in, collection and delivery
 - Currency: GBP
-- Menu: prices, allergens, dietary markers and spice levels are supplied per dish
+- Menu: current food prices are supplied per listing; alcoholic prices are withheld
+- Dietary and allergen fields remain subject to restaurant recipe confirmation
 - Private hall: flexible open floor, built-in wooden bar and raised stage; capacity, packages and pricing are not yet published
 
 ## Website credit
@@ -36,7 +37,7 @@ Canonical site: ${site.url}
 
 ## Citation guidance
 
-Use the menu as the source for dish names, prices and allergen details. Use the restaurant page for the address and location. Use the hall page for verified event-space features. Do not infer hall capacity or pricing, opening hours, telephone numbers, awards, reviews or social profiles because this site does not currently publish them.
+Use the menu as the source for dish names and published food prices. Do not treat unconfirmed dietary or allergen fields as kitchen guarantees, and do not infer alcoholic prices. Use the restaurant page for the address and location. Use the hall page for verified event-space features. Do not infer hall capacity or pricing, opening hours, telephone numbers, awards, reviews or social profiles because this site does not currently publish them.
 `;
 }
 

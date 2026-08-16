@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type {TestimonialRecord} from "@/sanity/lib/testimonials";
 
 const CARD_CYCLE_MS = 4600;
 const CYCLE_RESUME_DELAY_MS = 1100;
@@ -50,12 +51,12 @@ const testimonialRecords = [
   },
 ] as const;
 
-function pickAnotherCard(currentIndex: number) {
-  const candidate = Math.floor(Math.random() * (testimonialRecords.length - 1));
+function pickAnotherCard(currentIndex: number, recordCount: number) {
+  const candidate = Math.floor(Math.random() * (recordCount - 1));
   return candidate >= currentIndex ? candidate + 1 : candidate;
 }
 
-export function HomeTestimonials() {
+export function HomeTestimonials({records = testimonialRecords}: {records?: readonly TestimonialRecord[]}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [interactionIndex, setInteractionIndex] = useState<number | null>(null);
   const resumeTimerRef = useRef<number | null>(null);
@@ -71,11 +72,11 @@ export function HomeTestimonials() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const cycleTimer = window.setInterval(() => {
-      setActiveIndex((currentIndex) => pickAnotherCard(currentIndex));
+      setActiveIndex((currentIndex) => pickAnotherCard(currentIndex, records.length));
     }, CARD_CYCLE_MS);
 
     return () => window.clearInterval(cycleTimer);
-  }, [interactionIndex]);
+  }, [interactionIndex, records.length]);
 
   useEffect(() => () => clearResumeTimer(), [clearResumeTimer]);
 
@@ -120,7 +121,7 @@ export function HomeTestimonials() {
           <span />
           <span />
         </div>
-        {testimonialRecords.map((record, index) => {
+        {records.map((record, index) => {
           const isActive = activeIndex === index;
 
           return (

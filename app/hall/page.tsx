@@ -4,6 +4,7 @@ import Link from "next/link";
 import { JsonLd } from "../components/json-ld";
 import { Reveal } from "../components/reveal";
 import { absoluteUrl, site } from "../lib/site";
+import {getMarketingPage, getPageSection, portableTextToPlainText} from "@/sanity/lib/pages";
 
 export const metadata: Metadata = {
   title: "Private Event Hall in Holytown",
@@ -121,31 +122,36 @@ const hallSchema = {
   ],
 };
 
-export default function HallPage() {
+export default async function HallPage() {
+  const cmsPage = await getMarketingPage("hall");
+  const introductionSection = getPageSection(cmsPage, "hall-intro");
+  const stageSection = getPageSection(cmsPage, "hall-stage");
+  const gallerySection = getPageSection(cmsPage, "hall-gallery");
   return (
     <main className="editorialPage hallPage">
       <JsonLd data={hallSchema} />
 
       <section className="hallHero" aria-labelledby="hall-title">
         <Image
-          src="/Hall1.jpeg"
-          alt="The private hall at Malabar Coast with an open floor and built-in wooden bar"
+          src={cmsPage?.heroImage?.url || "/Hall1.jpeg"}
+          alt={cmsPage?.heroImage?.alt || "The private hall at Malabar Coast with an open floor and built-in wooden bar"}
           fill
           sizes="100vw"
           priority
         />
         <div className="hallHeroShade" />
         <div className="hallHeroCopy">
-          <p>Private gatherings · Holytown</p>
-          <h1 id="hall-title"><span>A room</span><span>of your own.</span></h1>
+          <p>{cmsPage?.eyebrow || "Private gatherings · Holytown"}</p>
+          <h1 id="hall-title">{cmsPage?.heroHeading ? <span>{cmsPage.heroHeading}</span> : <><span>A room</span><span>of your own.</span></>}</h1>
         </div>
         <div className="heroChapterMark"><span>Bar · Stage · Flexible floor</span><i /><span>33 Main Street</span></div>
       </section>
 
       <section className="hallIntroduction" aria-labelledby="hall-introduction-title">
-        <Reveal className="chapterIndex">The private hall · 01</Reveal>
-        <Reveal as="h2" id="hall-introduction-title" delay={70}>Gather by<br />the coast.</Reveal>
+        <Reveal className="chapterIndex">{introductionSection?.eyebrow || "The private hall · 01"}</Reveal>
+        <Reveal as="h2" id="hall-introduction-title" delay={70}>{introductionSection?.heading || <>Gather by<br />the coast.</>}</Reveal>
         <div>
+          {introductionSection ? <Reveal as="p">{portableTextToPlainText(introductionSection.body)}</Reveal> : <>
           <Reveal as="p">
             Malabar Coast&apos;s private hall is a flexible event space within the restaurant in
             Holytown. A built-in bar, raised stage and open floor create a calm setting for
@@ -156,6 +162,7 @@ export default function HallPage() {
             warm, understated character. Final capacity, packages, catering choices and pricing
             will be added when those details are confirmed.
           </Reveal>
+          </>}
           <Reveal delay={140}><time dateTime={site.lastUpdated}>Last reviewed 2 August 2026</time></Reveal>
         </div>
       </section>
@@ -170,32 +177,30 @@ export default function HallPage() {
       <section className="hallStagePortrait" aria-labelledby="hall-stage-title">
         <Reveal className="hallStageImage">
           <Image
-            src="/Hall2.jpeg"
-            alt="Wide view of the Malabar Coast event hall showing its open floor and raised stage"
+            src={stageSection?.image?.url || "/Hall2.jpeg"}
+            alt={stageSection?.image?.alt || "Wide view of the Malabar Coast event hall showing its open floor and raised stage"}
             fill
             sizes="(max-width: 860px) 100vw, 62vw"
           />
         </Reveal>
         <div className="hallStageCopy">
-          <Reveal className="chapterIndex">The stage · 02</Reveal>
-          <Reveal as="h2" id="hall-stage-title" delay={70}>A natural<br />focal point.</Reveal>
+          <Reveal className="chapterIndex">{stageSection?.eyebrow || "The stage · 02"}</Reveal>
+          <Reveal as="h2" id="hall-stage-title" delay={70}>{stageSection?.heading || <>A natural<br />focal point.</>}</Reveal>
           <Reveal as="p" delay={130}>
-            The raised stage anchors the far end of the room for speeches, presentations and
-            moments shared together. Warm timber, a marble-toned backdrop and soft ceiling light
-            keep the space simple enough to make your own.
+            {portableTextToPlainText(stageSection?.body) || "The raised stage anchors the far end of the room for speeches, presentations and moments shared together. Warm timber, a marble-toned backdrop and soft ceiling light keep the space simple enough to make your own."}
           </Reveal>
         </div>
       </section>
 
       <section className="hallGallery" aria-labelledby="hall-gallery-title">
         <div className="hallGalleryHeading">
-          <Reveal className="chapterIndex">The room · 03</Reveal>
-          <Reveal as="h2" id="hall-gallery-title" delay={70}>Set the scene.</Reveal>
+          <Reveal className="chapterIndex">{gallerySection?.eyebrow || "The room · 03"}</Reveal>
+          <Reveal as="h2" id="hall-gallery-title" delay={70}>{gallerySection?.heading || "Set the scene."}</Reveal>
         </div>
         <Reveal className="hallGalleryImage" delay={120}>
           <Image
-            src="/Hall3.jpeg"
-            alt="The raised stage in the Malabar Coast hall with chairs arranged across the floor"
+            src={gallerySection?.image?.url || "/Hall3.jpeg"}
+            alt={gallerySection?.image?.alt || "The raised stage in the Malabar Coast hall with chairs arranged across the floor"}
             fill
             sizes="100vw"
           />

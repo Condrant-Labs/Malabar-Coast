@@ -1,5 +1,6 @@
 type DietaryMarkerProps = {
-  dietary: readonly string[];
+  dietary?: readonly string[];
+  status?: DietaryPreference | "unconfirmed" | "notApplicable";
   compact?: boolean;
 };
 
@@ -17,13 +18,15 @@ const labels: Record<DietaryPreference, string> = {
   nonVegetarian: "Non-vegetarian",
 };
 
-export function DietaryMarker({ dietary, compact = false }: DietaryMarkerProps) {
-  const preference = getDietaryPreference(dietary);
+export function DietaryMarker({ dietary = [], status, compact = false }: DietaryMarkerProps) {
+  const preference = status ?? getDietaryPreference(dietary);
+  if (preference === "notApplicable") return null;
+  const label = preference === "unconfirmed" ? "Dietary status unconfirmed" : labels[preference];
 
   return (
     <span className={`dietaryMarker is-${preference} ${compact ? "isCompact" : ""}`}>
       <i aria-hidden="true" />
-      <span>{labels[preference]}</span>
+      <span>{label}</span>
     </span>
   );
 }

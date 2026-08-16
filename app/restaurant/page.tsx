@@ -4,8 +4,10 @@ import Link from "next/link";
 import { AddToOrder } from "../components/add-to-order";
 import { JsonLd } from "../components/json-ld";
 import { Reveal } from "../components/reveal";
-import { formatPrice, getMenuItem } from "../lib/menu";
+import { formatPrice } from "../lib/menu";
 import { absoluteUrl } from "../lib/site";
+import {getMarketingPage, getPageSection, portableTextToPlainText} from "@/sanity/lib/pages";
+import {getMenuContent} from "@/sanity/lib/menu";
 
 export const metadata: Metadata = {
   title: "Restaurant in Holytown",
@@ -32,21 +34,21 @@ const breadcrumbSchema = {
 
 const signatures = [
   {
-    id: "pepper-tiger-prawns",
+    id: "malabar-coast-signature-konju-coconut-fry",
     image: "/menu/calicut-pepper-prawns.png",
     eyebrow: "From the coast",
     title: "Pepper, coconut, sea.",
     copy: "Seafood cooked with curry leaf, kokum and the deep warmth of Malabar black pepper.",
   },
   {
-    id: "cape-malay-lamb",
+    id: "malabar-coast-signature-aattirachi-kurumulak",
     image: "/menu/cape-malay-lamb.png",
     eyebrow: "From the fire",
     title: "Spice with patience.",
     copy: "Slow braises, toasted masala and smoke — layered for depth, never heat for its own sake.",
   },
   {
-    id: "cardamom-nata",
+    id: "desserts-malabar-coast-special-dessert",
     image: "/menu/lisbon-custard-tart.png",
     eyebrow: "To finish",
     title: "A sweet crossing.",
@@ -54,30 +56,35 @@ const signatures = [
   },
 ];
 
-export default function RestaurantPage() {
+export default async function RestaurantPage() {
+  const [cmsPage, {items: currentMenuItems}] = await Promise.all([getMarketingPage("restaurant"), getMenuContent()]);
+  const welcomeSection = getPageSection(cmsPage, "restaurant-welcome");
+  const roomSection = getPageSection(cmsPage, "restaurant-room");
+  const hallSection = getPageSection(cmsPage, "restaurant-hall");
   return (
     <main className="editorialPage restaurantPage">
       <JsonLd data={breadcrumbSchema} />
       <section className="restaurantHero" aria-labelledby="restaurant-title">
         <Image
-          src="/restaurant/dining-room.png"
-          alt="The warmly lit Malabar Coast dining room with teak, cane and brass details"
+          src={cmsPage?.heroImage?.url || "/restaurant/dining-room.png"}
+          alt={cmsPage?.heroImage?.alt || "The warmly lit Malabar Coast dining room with teak, cane and brass details"}
           fill
           sizes="100vw"
           priority
         />
         <div className="editorialHeroShade" />
         <div className="restaurantHeroCopy">
-          <p>Our restaurant · Holytown</p>
-          <h1 id="restaurant-title"><span>Let us take you</span><span>to the coast.</span></h1>
+          <p>{cmsPage?.eyebrow || "Our restaurant · Holytown"}</p>
+          <h1 id="restaurant-title">{cmsPage?.heroHeading ? <span>{cmsPage.heroHeading}</span> : <><span>Let us take you</span><span>to the coast.</span></>}</h1>
         </div>
         <div className="heroChapterMark"><span>33 Main Street</span><i /><span>Holytown · ML1 4TH</span></div>
       </section>
 
       <section className="restaurantWelcome">
-        <Reveal className="welcomeLabel">A warm arrival</Reveal>
-        <Reveal as="h2" delay={70}>Welcomed<br />like home.</Reveal>
+        <Reveal className="welcomeLabel">{welcomeSection?.eyebrow || "A warm arrival"}</Reveal>
+        <Reveal as="h2" delay={70}>{welcomeSection?.heading || <>Welcomed<br />like home.</>}</Reveal>
         <div className="welcomeCopy">
+          {welcomeSection ? <Reveal as="p">{portableTextToPlainText(welcomeSection.body)}</Reveal> : <>
           <Reveal as="p">
             A neighbourhood dining room for the bright, generous cooking of Kerala and India&apos;s
             southern coast.
@@ -90,6 +97,7 @@ export default function RestaurantPage() {
             Come for a quick supper, a long family table or a celebration. The welcome is relaxed,
             the plates are made for sharing, and there is always room for one more.
           </Reveal>
+          </>}
         </div>
       </section>
 
@@ -102,18 +110,17 @@ export default function RestaurantPage() {
 
       <section className="restaurantHallTeaser" aria-labelledby="restaurant-hall-title">
         <Image
-          src="/Hall3.jpeg"
-          alt="The private event hall at Malabar Coast with a raised stage and flexible seating"
+          src={hallSection?.image?.url || "/Hall3.jpeg"}
+          alt={hallSection?.image?.alt || "The private event hall at Malabar Coast with a raised stage and flexible seating"}
           fill
           sizes="100vw"
         />
         <div className="restaurantHallShade" />
         <div className="restaurantHallCopy">
-          <Reveal className="chapterIndex">Private gatherings · Within Malabar Coast</Reveal>
-          <Reveal as="h2" id="restaurant-hall-title" delay={70}>A room<br />of your own.</Reveal>
+          <Reveal className="chapterIndex">{hallSection?.eyebrow || "Private gatherings · Within Malabar Coast"}</Reveal>
+          <Reveal as="h2" id="restaurant-hall-title" delay={70}>{hallSection?.heading || <>A room<br />of your own.</>}</Reveal>
           <Reveal as="p" delay={130}>
-            The restaurant includes a flexible private hall with a built-in bar, raised stage
-            and open floor for celebrations, family gatherings and community occasions.
+            {hallSection?.text || "The restaurant includes a flexible private hall with a built-in bar, raised stage and open floor for celebrations, family gatherings and community occasions."}
           </Reveal>
           <Reveal delay={180}><Link href="/hall">Explore the private hall <span aria-hidden="true">↗</span></Link></Reveal>
         </div>
@@ -122,19 +129,17 @@ export default function RestaurantPage() {
       <section className="roomPortrait">
         <Reveal className="roomPortraitImage">
           <Image
-            src="/restaurant/table-for-two.png"
-            alt="An intimate table for two with brass cups, warm linen and handcrafted plates"
+            src={roomSection?.image?.url || "/restaurant/table-for-two.png"}
+            alt={roomSection?.image?.alt || "An intimate table for two with brass cups, warm linen and handcrafted plates"}
             fill
             sizes="(max-width: 820px) 100vw, 62vw"
           />
         </Reveal>
         <div className="roomPortraitText">
-          <Reveal className="chapterIndex">The room · Material &amp; memory</Reveal>
-          <Reveal as="h2" delay={70}>Grounded in<br />the coast.</Reveal>
+          <Reveal className="chapterIndex">{roomSection?.eyebrow || <>The room · Material &amp; memory</>}</Reveal>
+          <Reveal as="h2" delay={70}>{roomSection?.heading || <>Grounded in<br />the coast.</>}</Reveal>
           <Reveal as="p" delay={130}>
-            Dark teak recalls the old trading vessels. Aged brass holds the warmth of the lamp.
-            Cane, lime plaster, linen and laterite tones bring Kerala&apos;s textures into a
-            contemporary Scottish dining room.
+            {portableTextToPlainText(roomSection?.body) || "Dark teak recalls the old trading vessels. Aged brass holds the warmth of the lamp. Cane, lime plaster, linen and laterite tones bring Kerala's textures into a contemporary Scottish dining room."}
           </Reveal>
           <Reveal className="materialList" delay={170}>
             <span><i>01</i>Teak</span><span><i>02</i>Brass</span><span><i>03</i>Cane</span><span><i>04</i>Laterite</span>
@@ -155,12 +160,12 @@ export default function RestaurantPage() {
               <h3>{signature.title}</h3>
               <p>{signature.copy}</p>
               {(() => {
-                const dish = getMenuItem(signature.id);
+                const dish = currentMenuItems.find((menuItem) => menuItem.id === signature.id);
                 return dish ? (
                   <div className="signatureOrder">
                     <span>{dish.name}</span>
                     <strong>{formatPrice(dish.pricePence)}</strong>
-                    <AddToOrder id={dish.id} compact />
+                    {dish.onlineOrdering && <AddToOrder id={dish.id} compact />}
                   </div>
                 ) : null;
               })()}

@@ -5,6 +5,7 @@ import { StoryCanvas } from "./story-canvas";
 import { StoryTransitionLink } from "./story-transition-link";
 import { JsonLd } from "../components/json-ld";
 import { absoluteUrl } from "../lib/site";
+import {getMarketingPage, getPageSection, portableTextToPlainText} from "@/sanity/lib/pages";
 
 export const metadata: Metadata = {
   title: "Our Story: From Malabar to Scotland",
@@ -78,29 +79,42 @@ const chapters = [
 
 const dishesFromTheStory = [
   {
-    name: "Black pepper tiger prawns",
-    link: "/menu#small-plates",
+    name: "Konju Coconut Fry",
+    link: "/menu#malabar-coast-signature",
     image: "/menu/calicut-pepper-prawns.png",
-    alt: "Black pepper tiger prawns inspired by Calicut's spice coast",
+    alt: "A coastal prawn dish inspired by Calicut's spice coast",
     connection: "Calicut · Pepper",
   },
   {
-    name: "Highland haddock moilee",
-    link: "/menu#seafood",
+    name: "Meen Moilee",
+    link: "/menu#malabar-coast-signature",
     image: "/menu/scotland-haddock.png",
-    alt: "Scottish haddock served in a golden coconut moilee",
+    alt: "Fish served in a golden coconut moilee",
     connection: "Malabar to Scotland · Coconut",
   },
   {
-    name: "Cardamom pastel de nata",
+    name: "Malabar Coast Special Dessert",
     link: "/menu#desserts",
     image: "/menu/lisbon-custard-tart.png",
-    alt: "Cardamom custard tart with cashew and black pepper caramel",
+    alt: "A warm spiced dessert inspired by the old sea route",
     connection: "Lisbon · Cardamom",
   },
 ] as const;
 
-export default function StoryPage() {
+export default async function StoryPage() {
+  const cmsPage = await getMarketingPage("story");
+  const cmsChapters = [getPageSection(cmsPage, "story-pepper"), getPageSection(cmsPage, "story-monsoon")];
+  const renderedChapters = chapters.map((chapter, index) => {
+    const cmsChapter = cmsChapters[index];
+    return cmsChapter ? {
+      ...chapter,
+      eyebrow: cmsChapter.eyebrow || chapter.eyebrow,
+      title: cmsChapter.heading || chapter.title,
+      copy: portableTextToPlainText(cmsChapter.body) || chapter.copy,
+      image: cmsChapter.image?.url || chapter.image,
+      alt: cmsChapter.image?.alt || chapter.alt,
+    } : chapter;
+  });
   return (
     <StoryCanvas>
       <JsonLd data={storySchema} />
@@ -110,8 +124,8 @@ export default function StoryPage() {
         <div className="storyFilmHeroMedia absolute inset-0">
           <Image
             className="storyFilmHeroImage object-cover"
-            src="/story/calicut-spice-port.png"
-            alt="A rain-washed historic spice port on the Malabar Coast"
+            src={cmsPage?.heroImage?.url || "/story/calicut-spice-port.png"}
+            alt={cmsPage?.heroImage?.alt || "A rain-washed historic spice port on the Malabar Coast"}
             fill
             sizes="100vw"
             priority
@@ -122,14 +136,14 @@ export default function StoryPage() {
 
         <div className="storyFilmCopy">
           <div className="storyHeroMeta">
-            <span>Our story · Chapter I</span>
+            <span>{cmsPage?.eyebrow || "Our story · Chapter I"}</span>
             <span>11.2588° N · 75.7804° E</span>
           </div>
-          <h1 id="story-title">
+          {cmsPage?.heroHeading ? <h1 id="story-title"><span className="storyHeroLine"><span>{cmsPage.heroHeading}</span></span></h1> : <h1 id="story-title">
             <span className="storyHeroLine"><span>A coast that</span></span>
             <span className="storyHeroLine storyHeroLineOffset"><span>changed</span></span>
             <span className="storyHeroLine"><span>the table.</span></span>
-          </h1>
+          </h1>}
         </div>
 
         <div className="storyFilmFooter">
@@ -149,7 +163,7 @@ export default function StoryPage() {
         </h2>
         <div className="storyManifestoCopy">
           <p data-reveal>
-            A coastline shaped by rain, trade and welcome—where food became a language long before it became a menu.
+            {cmsPage?.heroText || "A coastline shaped by rain, trade and welcome—where food became a language long before it became a menu."}
           </p>
           <div data-reveal>
             <p>
@@ -166,7 +180,7 @@ export default function StoryPage() {
         <div className="storyAtlasCopy">
           <div className="storyAtlasRail" aria-hidden="true"><span>01</span><i /><span>03</span></div>
           <div className="storyAtlasPanels">
-            {chapters.map((chapter, index) => (
+            {renderedChapters.map((chapter, index) => (
               <article className="storyAtlasPanel" key={chapter.number}>
                 <p>{chapter.eyebrow} · Featured chapter</p>
                 <strong>{chapter.number}</strong>
@@ -187,7 +201,7 @@ export default function StoryPage() {
         </div>
 
         <div className="storyAtlasVisuals">
-          {chapters.map((chapter) => (
+          {renderedChapters.map((chapter) => (
             <figure
               className="storyAtlasScene"
               data-cursor-label={chapter.cursor}

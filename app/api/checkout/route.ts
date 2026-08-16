@@ -12,7 +12,7 @@ function digest(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function checkoutFingerprint(checkout: ReturnType<typeof validateCheckout>) {
+function checkoutFingerprint(checkout: Awaited<ReturnType<typeof validateCheckout>>) {
   return digest(JSON.stringify({
     provider: checkout.provider,
     fulfilment: checkout.fulfilment,
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
     if (!isOrderAccessConfigured()) throw new Error("Order access signing is not configured.");
 
-    const checkout = validateCheckout(await readLimitedJson(request, 64_000));
+    const checkout = await validateCheckout(await readLimitedJson(request, 64_000));
     const requestedKey = request.headers.get("idempotency-key") || "";
     if (!/^[a-zA-Z0-9_-]{16,100}$/.test(requestedKey)) {
       throw new CheckoutValidationError("A valid idempotency key is required.");

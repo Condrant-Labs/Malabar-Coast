@@ -2,31 +2,31 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { formatPrice, getMenuItem } from "../lib/menu";
+import { formatPrice, type MenuItem } from "../lib/menu";
 import { AddToOrder } from "./add-to-order";
 
 const featuredDishes = [
   {
-    id: "pepper-tiger-prawns",
+    id: "malabar-coast-signature-konju-coconut-fry",
     image: "/menu/calicut-pepper-prawns.png",
     alt: "Black pepper tiger prawns with curry leaf and charred lime",
     note: "From Calicut · Small plate",
   },
   {
-    id: "haddock-moilee",
+    id: "malabar-coast-signature-meen-moilee",
     image: "/menu/scotland-haddock.png",
     alt: "Scottish haddock in golden coconut moilee with charred leek",
     note: "Two coasts · Our signature",
   },
   {
-    id: "cape-malay-lamb",
+    id: "malabar-coast-signature-aattirachi-kurumulak",
     image: "/menu/cape-malay-lamb.png",
-    alt: "Slow-braised Cape Malay lamb curry with flaky parotta",
+    alt: "Pepper-spiced lamb with flaky porotta",
     note: "From the fire · Made for sharing",
   },
 ] as const;
 
-export function HomeSignatures() {
+export function HomeSignatures({items}: {items: MenuItem[]}) {
   return (
     <section className="homeSignatures" aria-labelledby="home-signatures-title">
       <div className="homeSignaturesIntro">
@@ -47,7 +47,7 @@ export function HomeSignatures() {
 
       <div className="homeSignatureGrid">
         {featuredDishes.map((featured, index) => {
-          const dish = getMenuItem(featured.id);
+          const dish = items.find((item) => item.id === featured.id);
           if (!dish) return null;
 
           return (
@@ -64,10 +64,10 @@ export function HomeSignatures() {
               <div className="homeSignatureCopy">
                 <p>{featured.note}</p>
                 <h3>{dish.name}</h3>
-                <span>{dish.description}</span>
+                {dish.description && <span>{dish.description}</span>}
                 <div className="homeSignatureOrder">
                   <strong>{formatPrice(dish.pricePence)}</strong>
-                  <AddToOrder id={dish.id} compact />
+                  {dish.onlineOrdering && <AddToOrder id={dish.id} compact />}
                 </div>
               </div>
             </article>

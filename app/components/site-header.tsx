@@ -5,10 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "./cart-provider";
+import type { SiteSettings } from "@/sanity/lib/site";
 
 const NAV_REVEAL_SCROLL_THRESHOLD = 4;
 
-export function SiteHeader() {
+export function SiteHeader({settings}: {settings: SiteSettings}) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [menuOpenedOnPath, setMenuOpenedOnPath] = useState<string | null>(null);
@@ -96,8 +97,8 @@ export function SiteHeader() {
           <span className="arrow" aria-hidden="true">↗</span>
         </Link>
 
-        <Link className="brand" href="/" aria-label="Malabar Coast home" onClick={handleBrandClick}>
-          <Image src="/malabar af.svg" alt="Malabar Coast" width={2383} height={2402} priority />
+        <Link className="brand" href="/" aria-label={`${settings.restaurantName} home`} onClick={handleBrandClick}>
+          <Image src={settings.logo.url} alt={settings.logo.alt} width={2383} height={2402} priority />
         </Link>
 
         <div className="headerActions" inert={navMinimal}>
@@ -140,15 +141,13 @@ export function SiteHeader() {
         <div className="menuInner">
           <p>Navigate the coast</p>
           <nav aria-label="Menu">
-            <Link href="/story" onClick={() => setMenuOpenedOnPath(null)}><span>01</span>Our story</Link>
-            <Link href="/menu" onClick={() => setMenuOpenedOnPath(null)}><span>02</span>The menu</Link>
-            <Link href="/restaurant" onClick={() => setMenuOpenedOnPath(null)}><span>03</span>Our restaurant</Link>
-            <Link href="/hall" onClick={() => setMenuOpenedOnPath(null)}><span>04</span>Private hall</Link>
-            <Link href="/faq" onClick={() => setMenuOpenedOnPath(null)}><span>05</span>Good to know</Link>
-            <Link href="/#reservations" onClick={() => setMenuOpenedOnPath(null)}><span>06</span>Plan your visit</Link>
-            <Link href="/checkout" onClick={() => setMenuOpenedOnPath(null)}><span>07</span>Your order</Link>
+            {settings.primaryNavigation.map((link, index) => (
+              <Link href={link.href} key={`${link.href}-${link.label}`} target={link.openInNewTab ? "_blank" : undefined} rel={link.openInNewTab ? "noreferrer" : undefined} onClick={() => setMenuOpenedOnPath(null)}>
+                <span>{String(index + 1).padStart(2, "0")}</span>{link.label}
+              </Link>
+            ))}
           </nav>
-          <small>33 Main Street · Holytown · ML1 4TH</small>
+          <small>{settings.address.streetAddress} · {settings.address.locality} · {settings.address.postalCode}</small>
         </div>
       </aside>
     </>

@@ -7,7 +7,11 @@ export default defineConfig([
   ...nextTypeScript,
   globalIgnores([
     ".next/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
     "node_modules/**",
     "next-env.d.ts",
+    "studio/**",
   ]),
 ]);

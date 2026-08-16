@@ -21,43 +21,43 @@ export const faqItems = [
     id: "signature-dishes",
     question: "Which dishes are signatures at Malabar Coast?",
     answer:
-      "Signature dishes include black pepper tiger prawns, Highland haddock moilee, coconut-charred sea bass, meen pollichathu, Thalassery lamb biriyani and Cape Malay lamb curry. The menu also highlights each dish’s price, dietary markers, allergens and spice level.",
+      "The Malabar Coast Signature section includes chicken pollichathu, kozhi varutharacha, aattirachi kurumulak, beef roast, kizhi porotta, meen moilee, konju coconut fry, prawn moilee and fish pollichathu. Current food prices are shown on the menu.",
   },
   {
     id: "vegetarian-options",
     question: "Does Malabar Coast serve vegetarian food choices?",
     answer:
-      "Yes. Vegetarian choices include cauliflower 65, garden vegetable biriyani and paneer pepper fry. The wider plant-led selection includes jackfruit ishtu, wild mushroom mappas, Kerala parippu, appam, coconut rice and seasonal thoran.",
+      "Yes. The dedicated vegetarian section includes dal tadka, vegetable Mughlai korma, paneer butter masala, vegetable chasni, aloo gobi, cherupayar curry, kadai paneer and Indian garlic chilli vegetables. Several starters, dosas, breads, rice dishes and sundries are also marked vegetarian, pending final recipe confirmation by the restaurant.",
   },
   {
     id: "vegan-options",
-    question: "Are vegan dishes available at Malabar Coast?",
+    question: "Which dishes are suitable for vegans?",
     answer:
-      "Yes. Vegan dishes are marked VG on the menu. Current examples include jackfruit ishtu, wild mushroom mappas, Kerala parippu, appam, coconut rice, seasonal thoran, tender coconut pudding, ada pradhaman and several alcohol-free drinks.",
+      "The supplied menu does not include an official vegan or allergen legend. Some dishes may be vegan by recipe, but ingredients such as ghee, dairy, egg and shared-fryer exposure must be confirmed by the restaurant before a vegan label is published. Please ask the team before ordering.",
   },
   {
     id: "gluten-free-options",
-    question: "Are gluten-free choices clearly marked on the menu?",
+    question: "Are gluten-free choices marked on the menu?",
     answer:
-      "Yes. Gluten-free dishes are marked GF throughout the menu. Many seafood, biriyani, vegetable, rice and dessert choices carry this marker, but guests with allergies should still share their requirements because the kitchen handles regulated allergens and cross-contact may occur.",
+      "Not yet. The supplied menu does not include confirmed gluten-free labels. Guests who avoid gluten should speak to the restaurant before ordering so ingredients and cross-contact risks can be checked against the current kitchen recipe.",
   },
   {
     id: "food-allergies",
     question: "How does Malabar Coast display food allergens?",
     answer:
-      "Every listed dish includes known allergens alongside its dietary markers and spice level. Guests should always state allergies when ordering because the kitchen handles all 14 regulated allergens, and the menu clearly notes that cross-contact may occur.",
+      "The supplied menu does not provide a dish-by-dish allergen matrix. Guests must state allergies before ordering so the restaurant can check the current recipe and cross-contact risk. CMS allergen fields are present but remain unpublished until the restaurant confirms them.",
   },
   {
     id: "spice-levels",
     question: "How spicy is the food at Malabar Coast?",
     answer:
-      "Malabar Coast labels dishes Gentle, Warm, Medium, Hot, Aromatic or None. Coconut-based moilee, children’s dishes and several plant-based plates offer gentler choices, while pepper, chilli and Chettinad dishes provide more pronounced heat.",
+      "The supplied menu does not include confirmed spice-level labels. Please ask the team for guidance and say how much heat you prefer when ordering; many dishes can vary by recipe and preparation.",
   },
   {
     id: "children-menu",
     question: "Does Malabar Coast have a menu for children?",
     answer:
-      "Yes. The children’s selection includes a gentle coconut chicken curry with rice, crisp haddock bites with rice and yoghurt, and a mild dal with rice and vegetables. Dietary markers and allergens appear beside each children’s dish.",
+      "Yes. The children’s menu lists chicken chasni, chicken korma, chicken nuggets with chips, fish fingers with chips, and fish with chips. Each is currently £7.95. Ask the restaurant to confirm allergens and suitable substitutions.",
   },
   {
     id: "dine-in",
@@ -81,7 +81,7 @@ export const faqItems = [
     id: "menu-prices",
     question: "Can I see all menu prices before ordering?",
     answer:
-      "Yes. Current prices are displayed beside every menu item and featured dish in pounds sterling. The order drawer and checkout also show item totals, delivery fees where applicable and the final amount before payment is submitted.",
+      "Food, dessert, soft-drink, tea, coffee, alcohol-free beer and mixer prices from the supplied menu are shown in pounds sterling. Alcoholic beer, cider, spirit and wine prices are intentionally not published online; ask the restaurant team for the current bar price list.",
   },
   {
     id: "malabar-story",

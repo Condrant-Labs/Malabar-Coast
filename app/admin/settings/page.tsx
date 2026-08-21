@@ -4,6 +4,7 @@ import { isProductionOrderAccessConfigured } from "../../lib/order-access";
 import { isDurableOrderStorageConfigured } from "../../lib/order-store";
 import { isStripeConfigured } from "../../lib/payments/stripe";
 import { checkBrevoConnection } from "../../lib/email/brevo";
+import { getAdminContentOverview } from "../../../sanity/lib/admin-content";
 import { AdminFrame, AdminPageHeader } from "../components/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -11,14 +12,27 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsPage() {
   const session = await getAdminSession("settings:read");
   if (!session) redirect("/admin/login");
-  const [adminAuthReady, brevoReady] = await Promise.all([checkAdminAuthSchema(), checkBrevoConnection()]);
+  const [adminAuthReady, brevoReady, contentOverview] = await Promise.all([
+    checkAdminAuthSchema(),
+    checkBrevoConnection(),
+    getAdminContentOverview(),
+  ]);
   const canonicalReady = (() => { try { return new URL(process.env.NEXT_PUBLIC_SITE_URL || "").protocol === "https:"; } catch { return false; } })();
+  const studioReady = (() => {
+    try {
+      const studioUrl = new URL(process.env.NEXT_PUBLIC_SANITY_STUDIO_URL || "");
+      return Boolean(contentOverview && (studioUrl.protocol === "https:" || studioUrl.protocol === "http:"));
+    } catch {
+      return false;
+    }
+  })();
   const checks = [
     { label: "Administrator authentication", ready: adminAuthReady, detail: "Supabase Auth identity, active staff profile, roles, session revocation and audit log" },
     { label: "Durable order database", ready: isDurableOrderStorageConfigured(), detail: "Supabase server-secret connection for private order access" },
     { label: "Customer order privacy", ready: isProductionOrderAccessConfigured(), detail: "Signed access grants prevent order-reference enumeration" },
     { label: "Stripe hosted checkout", ready: isStripeConfigured(), detail: "Hosted Checkout, authenticated queries and signed webhook reconciliation" },
     { label: "Brevo transactional email", ready: brevoReady, detail: "Authenticated API reachability plus idempotent customer and owner notices" },
+    { label: "Sanity content operations", ready: studioReady, detail: "Published-content read access and a valid Studio destination for safe editing" },
     { label: "Secure production origin", ready: canonicalReady, detail: "HTTPS canonical origin for secure cookies and return URLs" },
   ];
   const ready = checks.filter((check) => check.ready).length;

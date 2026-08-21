@@ -29,3 +29,12 @@ test("production readiness requires live Stripe credentials", async () => {
   assert.match(readiness, /stripePayments: isStripeProductionReady\(\)/);
   assert.match(stripe, /\(\?:sk\|rk\)_live_/);
 });
+
+test("CMS-only dishes carry their category into server-side checkout validation", async () => {
+  const [queries, menu] = await Promise.all([
+    readFile(new URL("../sanity/lib/queries.ts", import.meta.url), "utf8"),
+    readFile(new URL("../sanity/lib/menu.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(queries, /checkoutMenuItemQuery[\s\S]*"category": category->slug\.current/);
+  assert.match(menu, /if \(!raw\.id \|\| !raw\.category \|\| !raw\.name\) return null/);
+});

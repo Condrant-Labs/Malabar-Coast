@@ -53,6 +53,7 @@ The private portal begins at `/admin` and includes:
 - a kitchen board for new, accepted, making, ready and delivery stages;
 - daily collection, monthly sales, order-mix and dish-performance reporting;
 - per-order customer, basket, audit history and staff-only operations notes; and
+- a published-content command centre for menu, offers, pages and Studio CRUD workflows; and
 - a read-only deployment and security readiness page.
 
 Run the current `supabase/schema.sql` before deploying the matching application build. Supabase Auth verifies staff identity; the private `admin_profiles` table applies least-privilege roles. The portal uses a server-only Supabase secret key (or legacy service-role key) for protected operations and never connects a browser directly to private order or administrator tables.

@@ -66,6 +66,7 @@ export const menuContentQuery = defineQuery(`{
 
 export const checkoutMenuItemQuery = defineQuery(`*[_type == "menuItem" && (sourceKey == $id || _id == $id)][0] {
   "id": coalesce(sourceKey, _id),
+  "category": category->slug.current,
   name,
   pricePence,
   available,

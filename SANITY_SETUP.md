@@ -20,6 +20,8 @@ NEXT_PUBLIC_SANITY_STUDIO_URL=https://malabar-coast.sanity.studio
 
 The API token must never use a `NEXT_PUBLIC_` prefix. The token used for the initial import needs content Editor permission. Schema deployment also needs `sanity.project/deploySchema` permission.
 
+The protected `/admin/content` command centre reads the same published catalogue used by the public website and checkout. It provides live menu and promotion health, searchable inventory, and direct Studio intents for creating and editing records. Destructive content changes remain inside authenticated Studio; pause or unpublish content before deleting whenever practical.
+
 ## Run locally
 
 From the repository root:

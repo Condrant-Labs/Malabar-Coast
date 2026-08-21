@@ -5,7 +5,7 @@ import { isSupabaseServerConfigured, supabaseServerRequest, supabaseServerRpc } 
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const dataFile = path.join(dataDirectory, "orders.json");
-const ORDER_DATABASE_CONTRACT_VERSION = "2026-08-15-supabase-admin-auth-v3";
+const ORDER_DATABASE_CONTRACT_VERSION = "2026-08-22-bookings-v4";
 let writeQueue: Promise<void> = Promise.resolve();
 
 async function readLocalOrders(): Promise<OrderRecord[]> {

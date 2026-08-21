@@ -56,11 +56,8 @@
 - Reverified 25 automated tests, ESLint, the production build, security headers, protected-route redirects, response types, zero broken images and zero body-level horizontal overflow.
 - Deployment still requires live HTTPS, Supabase credentials and schema, a configured payment provider, monitoring secrets and owner-approved policy pages before orders can be accepted in production.
 
-2026-08-09 - Hosted Stripe and Worldpay checkout lifecycle complete
+2026-08-09 - Hosted Stripe checkout lifecycle complete
 
-- Replaced browser-embedded Worldpay card fields with full-page Hosted Payment Pages; the application no longer needs or exposes a Worldpay Checkout ID.
-- Kept Stripe on its full hosted Checkout page and added authenticated session reconciliation to match the Worldpay delayed-event recovery path.
-- Added HMAC verification for Worldpay Event-Signature headers, corrected HPP webhook amount parsing, and made the database bind Worldpay's real payment ID only after verified provider evidence arrives.
-- Added Worldpay Payment Queries reconciliation, dedicated expiry handling, production readiness checks, updated environment/documentation contracts and hosted-checkout regression tests.
-- Verified the actual Worldpay Try Payment Queries endpoint with the credentials in `.env.local` and the required versioned media type; the read-only request returned HTTP 200 without creating a payment.
+- Kept Stripe on its full hosted Checkout page and added authenticated session reconciliation for delayed webhooks.
+- Added production readiness checks, updated environment/documentation contracts and hosted-checkout regression tests.
 - Verified 33 automated security/payment/database tests, ESLint, TypeScript, the production build and `git diff --check`.

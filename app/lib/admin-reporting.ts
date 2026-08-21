@@ -137,7 +137,6 @@ export function summariseOrders(orders: OrderRecord[]) {
     collectionOrders: paidOrders.filter((order) => order.fulfilment === "collection").length,
     deliveryOrders: paidOrders.filter((order) => order.fulfilment === "delivery").length,
     stripeOrders: paidOrders.filter((order) => order.provider === "stripe").length,
-    worldpayOrders: paidOrders.filter((order) => order.provider === "worldpay").length,
     attentionOrders: orders.filter((order) => attentionOrderStatuses.includes(order.status)),
     statusCounts,
     topDishes: [...dishMap.values()].sort((left, right) => right.units - left.units).slice(0, 8),

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { JsonLd } from "../components/json-ld";
 import { Reveal } from "../components/reveal";
+import { HallEnquiryForm } from "../components/hall-enquiry-form";
 import { absoluteUrl, site } from "../lib/site";
 import {getMarketingPage, getPageSection, portableTextToPlainText} from "@/sanity/lib/pages";
 
@@ -65,7 +66,7 @@ const hallFaqs = [
     id: "hall-booking",
     question: "How can guests enquire about the hall?",
     answer:
-      "Hall booking, capacity, package, catering and pricing details are still being finalised. Guests can currently review the room photographs and restaurant location online. The official enquiry method will be added to this page when the restaurant supplies the confirmed contact details.",
+      "Send the hall enquiry form with your preferred date, approximate guest count and the basics of your occasion. This starts a request rather than confirming the space. The restaurant team will review it and contact you to discuss availability, timing, layout, catering and pricing.",
   },
 ] as const;
 
@@ -228,10 +229,8 @@ export default async function HallPage() {
       <section className="hallClosing" aria-labelledby="hall-closing-title">
         <Reveal className="chapterIndex">Your occasion · Holytown</Reveal>
         <Reveal as="h2" id="hall-closing-title" delay={70}>Bring people<br />together.</Reveal>
-        <Reveal as="p" delay={120}>
-          Capacity, event packages, catering, availability and a direct enquiry route will be
-          published after the restaurant confirms them.
-        </Reveal>
+        <Reveal as="p" delay={120}>Tell us the basics now. The team will review your request and call or email you before anything is confirmed.</Reveal>
+        <Reveal className="hallEnquiryPanel" delay={150}><HallEnquiryForm /></Reveal>
         <Reveal className="hallClosingActions" delay={170}>
           <Link href="/restaurant#location">See the location <span aria-hidden="true">→</span></Link>
           <Link href="/faq">Read restaurant FAQs <span aria-hidden="true">↗</span></Link>

@@ -8,6 +8,8 @@ import { HomeSignatures } from "./components/home-signatures";
 import { HomeTestimonials } from "./components/home-testimonials";
 import type {MenuItem} from "./lib/menu";
 import type {TestimonialRecord} from "@/sanity/lib/testimonials";
+import type {Promotion} from "@/sanity/lib/promotions";
+import {PromotionPopup} from "./components/promotion-popup";
 
 const REDUCED_MOTION_INTRO_DELAY_MS = 120;
 const REPLAY_INTRO_EVENT = "malabar:replay-intro";
@@ -45,7 +47,7 @@ function CompassMark() {
   );
 }
 
-export function HomeExperience({content, menuItems}: {content: HomeCmsContent; menuItems: MenuItem[]}) {
+export function HomeExperience({content, menuItems, promotions}: {content: HomeCmsContent; menuItems: MenuItem[]; promotions: Promotion[]}) {
   const [introActive, setIntroActive] = useState(true);
   const [heroFooterRevealed, setHeroFooterRevealed] = useState(false);
 
@@ -85,6 +87,7 @@ export function HomeExperience({content, menuItems}: {content: HomeCmsContent; m
       className={`homePage ${introActive ? "introActive" : "introComplete"}`}
       aria-busy={introActive}
     >
+      <PromotionPopup promotions={promotions} ready={!introActive} />
       <section className="hero" aria-labelledby="hero-title">
       {introActive && (
         <div

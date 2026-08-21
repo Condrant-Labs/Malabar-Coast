@@ -1,6 +1,6 @@
 # Supabase database and administrator authentication
 
-This project uses one Supabase project for durable order storage, payment-event audit records, administrator identities and role authorization. Card data never enters Supabase: Stripe and Worldpay host card collection.
+This project uses one Supabase project for durable order storage, payment-event audit records, administrator identities and role authorization. Card data never enters Supabase: Stripe hosts card collection.
 
 ## Required environment values
 
@@ -150,4 +150,4 @@ The public readiness endpoint is `/api/health/ready`. Detailed failures are retu
 - Configure database backups and test recovery.
 - Schedule `redact_old_order_personal_data` only after the business approves its accounting and privacy retention period.
 - Review active profiles and the audit log regularly; deactivate departing staff immediately.
-- Test signed Stripe and Worldpay webhooks separately against the live deployment. Local schema checks do not replace provider acceptance testing.
+- Test signed Stripe webhooks against the live deployment. Local schema checks do not replace provider acceptance testing.

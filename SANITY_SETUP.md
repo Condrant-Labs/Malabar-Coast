@@ -37,7 +37,15 @@ The commands run separately. By default the website uses port 3000 and the local
 2. Run `npm run sanity:seed` from the repository root.
 3. Open Studio, review the dietary and allergen fields marked **Needs restaurant confirmation**, and publish corrections.
 
-The seed is idempotent: it updates records by category slug, stable menu key, page key or question instead of creating duplicates.
+The seed is idempotent: it updates imported records by category slug, legacy menu key, page key or question instead of creating duplicates. Menu items created directly in Studio use their stable Sanity document ID and do not need a legacy key.
+
+## Promotions and offers
+
+- Create one **Promotion or offer** document per poster.
+- Add accessible poster text, a title and the public offer details; use the start/end dates for automatic scheduling.
+- Keep the status **Active** for a live promotion. **Paused** hides it without deleting it.
+- Enable **Show in the homepage popup** when it should appear in the homepage carousel.
+- All active promotions appear on `/offers`. One active popup poster is shown on its own; multiple active posters become a carousel.
 
 ## Menu safety rules
 
@@ -45,4 +53,5 @@ The seed is idempotent: it updates records by category slug, stable menu key, pa
 - Alcoholic drinks cannot be added to online orders.
 - Online-orderable items require a numeric price.
 - Checkout reads the current CMS price on the server, with the checked-in menu used only when Sanity cannot be reached.
+- Newly created Studio dishes are supported automatically; they no longer depend on the original import key.
 - Vegan, gluten-free and allergen claims are not published until the restaurant confirms recipes and cross-contact handling.

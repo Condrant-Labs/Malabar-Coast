@@ -2,6 +2,7 @@ import {getSanityClient} from "./client";
 import type {CmsImage} from "./menu";
 import {marketingPageQuery} from "./queries";
 import type {SiteLink} from "./site";
+import {sanitisePublicLink} from "./links";
 
 type PortableTextSpan = {_type?: string; text?: string};
 type PortableTextBlock = {_type?: string; children?: PortableTextSpan[]};
@@ -40,7 +41,19 @@ export async function getMarketingPage(pageKey: string): Promise<MarketingPage |
   const client = getSanityClient();
   if (!client) return null;
   try {
-    return await client.fetch(marketingPageQuery, {pageKey}, {next: {revalidate: 60, tags: [`sanity-page-${pageKey}`]}}) as MarketingPage | null;
+    const page = await client.fetch(marketingPageQuery, {pageKey}, {next: {revalidate: 60, tags: [`sanity-page-${pageKey}`]}}) as MarketingPage | null;
+    if (!page) return null;
+    return {
+      ...page,
+      heroPrimaryLink: sanitisePublicLink(page.heroPrimaryLink),
+      heroSecondaryLink: sanitisePublicLink(page.heroSecondaryLink),
+      sections: page.sections?.map((section) => ({
+        ...section,
+        primaryLink: sanitisePublicLink(section.primaryLink),
+        secondaryLink: sanitisePublicLink(section.secondaryLink),
+        links: section.links?.map(sanitisePublicLink).filter((link): link is SiteLink => Boolean(link)),
+      })),
+    };
   } catch (error) {
     console.error(`Sanity ${pageKey} page fetch failed; using checked-in page copy.`, error instanceof Error ? error.name : "UnknownError");
     return null;

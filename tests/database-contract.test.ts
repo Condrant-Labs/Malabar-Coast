@@ -10,7 +10,7 @@ test("database schema contains the atomic checkout and transition boundary", asy
   assert.match(schema, /create function public\.transition_order_status/i);
   assert.match(schema, /for update/i);
   assert.match(schema, /create or replace function public\.order_database_health/i);
-  assert.match(schema, /2026-08-15-supabase-admin-auth-v3/i);
+  assert.match(schema, /2026-08-22-bookings-v4/i);
   assert.match(schema, /grant execute on function public\.order_database_health\(\) to service_role/i);
 });
 
@@ -25,7 +25,7 @@ test("payment event RPC requires provider identity and value inputs", async () =
   assert.doesNotMatch(schema, /if p_provider = 'stripe'\s+and p_payment_status in/i);
 });
 
-test("hosted checkout may attach its URL before Worldpay creates a payment ID", async () => {
+test("hosted checkout supports a provider redirect and reference", async () => {
   const schema = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
   assert.match(schema, /p_provider_reference text default null/i);
   assert.match(schema, /p_provider_reference is null and p_provider_checkout_url is null/i);

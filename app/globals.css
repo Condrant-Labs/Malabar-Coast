@@ -1728,3 +1728,79 @@ h1 .indent { margin-left: clamp(2rem, 10vw, 10rem); color: transparent; -webkit-
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .skipIntro { display: none; }
 }
+
+/* CMS-managed promotions */
+.promotionPopup { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: clamp(1rem, 3vw, 2.5rem); background: rgba(2,10,8,.78); backdrop-filter: blur(12px); animation: promotionFade .28s ease both; }
+.promotionPopupDialog { position: relative; display: grid; grid-template-columns: minmax(17rem, .9fr) minmax(18rem, 1fr); width: min(62rem, 100%); max-height: min(48rem, calc(100svh - 2rem)); overflow: auto; border: 1px solid rgba(229,210,174,.4); background: #091814; color: #eee5d2; box-shadow: 0 2rem 7rem rgba(0,0,0,.55); }
+.promotionPopupClose { position: absolute; z-index: 4; top: .8rem; right: .8rem; display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid rgba(238,229,210,.48); border-radius: 50%; background: rgba(6,17,15,.78); color: #eee5d2; cursor: pointer; font: 300 1.5rem/1 sans-serif; }
+.promotionPopupClose:focus-visible { outline: 2px solid #c79b55; outline-offset: 3px; }
+.promotionPopupPoster { position: relative; min-height: 37rem; background: #111d19; }
+.promotionPopupPoster img { object-fit: contain; }
+.promotionPopupCopy { display: flex; flex-direction: column; justify-content: center; padding: clamp(3rem, 5vw, 5.5rem) clamp(1.5rem, 4vw, 4.5rem); }
+.promotionPopupCopy > p { margin: 0 0 1.1rem; color: #c79b55; font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; }
+.promotionPopupCopy h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(2.8rem, 5vw, 5.2rem); font-weight: 400; line-height: .86; letter-spacing: -.045em; text-transform: uppercase; }
+.promotionPopupCopy > span { margin-top: 1.5rem; color: rgba(238,229,210,.72); font-family: "Iowan Old Style", Georgia, serif; font-size: 1.05rem; line-height: 1.6; }
+.promotionPopupCopy > strong { width: fit-content; margin-top: 1.4rem; padding: .65rem .75rem; border: 1px dashed rgba(199,155,85,.65); color: rgba(238,229,210,.72); font-size: .59rem; letter-spacing: .12em; text-transform: uppercase; }
+.promotionPopupCopy > strong b { color: #eee5d2; }
+.promotionPopupCopy > small { margin-top: .9rem; color: rgba(238,229,210,.5); font-size: .6rem; letter-spacing: .06em; line-height: 1.5; text-transform: uppercase; }
+.promotionPopupActions { display: flex; flex-direction: column; margin-top: 2rem; }
+.promotionPopupActions a { display: flex; justify-content: space-between; gap: 2rem; min-height: 3.4rem; padding: 1rem 0; border-bottom: 1px solid rgba(238,229,210,.28); font-size: .58rem; letter-spacing: .16em; text-transform: uppercase; }
+.promotionPopupNav { position: absolute; right: 1rem; bottom: 1rem; left: calc(45% + 1rem); display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; gap: .65rem; align-items: center; }
+.promotionPopupNav > button { width: 2.75rem; height: 2.75rem; border: 1px solid rgba(238,229,210,.3); background: rgba(6,17,15,.65); color: #eee5d2; cursor: pointer; }
+.promotionPopupNav > div { display: flex; justify-content: center; gap: .55rem; }
+.promotionPopupNav > div button { width: .55rem; height: .55rem; padding: 0; border: 1px solid #c79b55; border-radius: 50%; background: transparent; cursor: pointer; }
+.promotionPopupNav > div button.isActive { background: #c79b55; }
+
+.offersPage { min-height: 100vh; padding-top: 7rem; background: #071310; color: #eee5d2; }
+.offersGrid { display: grid; gap: 0; padding: 3rem clamp(1.25rem, 6vw, 7rem) 7rem; }
+.offerCard { display: grid; grid-template-columns: minmax(18rem, .9fr) minmax(20rem, 1.1fr); min-height: 40rem; border-bottom: 1px solid rgba(238,229,210,.18); }
+.offerPoster { position: relative; margin: 4rem 0; background: #101d19; }
+.offerPoster img { object-fit: contain; }
+.offerCardCopy { display: flex; flex-direction: column; justify-content: center; padding: 4rem clamp(2rem, 6vw, 7rem); }
+.offerCardCopy > p { margin: 0 0 1rem; color: #c79b55; font-size: .58rem; letter-spacing: .2em; text-transform: uppercase; }
+.offerCardCopy h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(3rem, 5vw, 5.6rem); font-weight: 400; line-height: .86; letter-spacing: -.045em; text-transform: uppercase; }
+.offerCardCopy > span { margin-top: 1.5rem; color: rgba(238,229,210,.7); font-family: "Iowan Old Style", Georgia, serif; font-size: 1.05rem; line-height: 1.65; }
+.offerCardCopy > strong { margin-top: 1.5rem; color: rgba(238,229,210,.6); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; }
+.offerCardCopy > strong b { margin-left: .5rem; padding: .45rem .6rem; border: 1px dashed #c79b55; color: #eee5d2; }
+.offerCardCopy > small { margin-top: 1rem; color: rgba(238,229,210,.5); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
+.offerCardCopy > div { display: flex; flex-direction: column; margin-top: 2rem; }
+.offerCardCopy > div a { display: flex; justify-content: space-between; min-height: 3.4rem; padding: 1rem 0; border-bottom: 1px solid rgba(238,229,210,.25); font-size: .58rem; letter-spacing: .16em; text-transform: uppercase; }
+.offerCardCopy details { margin-top: 1.5rem; color: rgba(238,229,210,.58); font-size: .72rem; line-height: 1.6; }
+.offerCardCopy summary { width: fit-content; cursor: pointer; color: #c79b55; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; }
+.offersEmpty { display: flex; flex-direction: column; align-items: flex-start; min-height: 34rem; padding: 7rem clamp(1.25rem, 15vw, 14rem); background: #e8dfcb; color: #10201c; }
+.offersEmpty > p { margin: 0 0 1rem; color: #8c6028; font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; }
+.offersEmpty h2 { max-width: 48rem; margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(3.3rem, 6vw, 6rem); font-weight: 400; line-height: .87; text-transform: uppercase; }
+.offersEmpty > span { max-width: 34rem; margin-top: 1.4rem; font-family: "Iowan Old Style", Georgia, serif; line-height: 1.6; }
+.offersEmpty a { display: flex; gap: 3rem; min-height: 3.4rem; margin-top: 2rem; padding: 1rem 0; border-bottom: 1px solid #10201c; font-size: .58rem; letter-spacing: .15em; text-transform: uppercase; }
+
+@keyframes promotionFade { from { opacity: 0; } }
+
+@media (max-width: 760px) {
+  .promotionPopup { padding: .65rem; }
+  .promotionPopupDialog { display: block; max-height: calc(100svh - 1.3rem); }
+  .promotionPopupPoster { min-height: min(56svh, 30rem); }
+  .promotionPopupCopy { padding: 2rem 1.25rem 5rem; }
+  .promotionPopupCopy h2 { font-size: clamp(2.6rem, 12vw, 4rem); }
+  .promotionPopupNav { left: 1rem; }
+  .offersGrid { padding-inline: 1rem; }
+  .offerCard { display: block; min-height: 0; padding: 1rem 0 4rem; }
+  .offerPoster { min-height: 65svh; margin: 0; }
+  .offerCardCopy { padding: 2.5rem .25rem 0; }
+  .offerCardCopy h2 { font-size: clamp(3rem, 13vw, 4.8rem); }
+}
+
+/* Table reservations and hall enquiries */
+.bookingPage { min-height: 100vh; padding-top: 7rem; background: #e9dfca; color: #10201c; }
+.bookingIntro { display: grid; grid-template-columns: .6fr 1.4fr .8fr; gap: clamp(2rem,5vw,6rem); align-items: end; min-height: 32rem; padding: clamp(4rem,8vw,8rem) clamp(1.25rem,6vw,7rem); border-bottom: 1px solid rgba(16,32,28,.2); }
+.bookingIntro > p { align-self: start; margin: 0; color: #8c6028; font-size: .6rem; letter-spacing: .18em; text-transform: uppercase; }
+.bookingIntro h1 { margin: 0; font: 400 clamp(4rem,7.5vw,8rem)/.82 "Bodoni 72",Didot,serif; letter-spacing: -.05em; text-transform: uppercase; }
+.bookingIntro > span { color: rgba(16,32,28,.66); font: 1rem/1.65 "Iowan Old Style",Georgia,serif; }
+.bookingWorkspace { display: grid; grid-template-columns: minmax(18rem,.75fr) minmax(25rem,1.25fr); gap: clamp(2rem,7vw,8rem); padding: clamp(4rem,8vw,8rem) clamp(1.25rem,8vw,10rem); background: #f4efe4; }
+.bookingWorkspace > div:first-child > p { margin: 0; color: #8c6028; font-size: .58rem; letter-spacing: .16em; text-transform: uppercase; }
+.bookingWorkspace h2 { margin: 1rem 0 2rem; font: 400 clamp(2.8rem,5vw,5.5rem)/.88 "Bodoni 72",Didot,serif; text-transform: uppercase; }
+.bookingWorkspace ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid rgba(16,32,28,.2); }
+.bookingWorkspace li { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(16,32,28,.2); }
+.bookingWorkspace li b { font: 1rem "Iowan Old Style",Georgia,serif; }.bookingWorkspace li span { color: rgba(16,32,28,.58); font-size: .65rem; }
+.bookingFormCard { padding: clamp(1.25rem,4vw,3rem); border: 1px solid rgba(16,32,28,.2); background: #e9dfca; }
+.hallEnquiryPanel { width: min(100%,52rem); margin-top: 2.5rem; padding: clamp(1rem,3vw,2.5rem); border: 1px solid rgba(238,229,210,.28); background: #e9dfca; color: #10201c; }
+@media (max-width: 820px) { .bookingIntro { display: block; min-height: 0; }.bookingIntro h1 { margin: 3rem 0 1.5rem; }.bookingWorkspace { grid-template-columns: 1fr; }.hallEnquiryPanel { width: 100%; } }

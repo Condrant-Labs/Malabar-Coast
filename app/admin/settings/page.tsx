@@ -3,7 +3,7 @@ import { checkAdminAuthSchema, getAdminSession } from "../../lib/admin-auth";
 import { isProductionOrderAccessConfigured } from "../../lib/order-access";
 import { isDurableOrderStorageConfigured } from "../../lib/order-store";
 import { isStripeConfigured } from "../../lib/payments/stripe";
-import { isWorldpayCheckoutEnabled, isWorldpayWebhookSignatureConfigured } from "../../lib/payments/worldpay";
+import { checkBrevoConnection } from "../../lib/email/brevo";
 import { AdminFrame, AdminPageHeader } from "../components/admin-ui";
 
 export const dynamic = "force-dynamic";
@@ -11,15 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsPage() {
   const session = await getAdminSession("settings:read");
   if (!session) redirect("/admin/login");
-  const adminAuthReady = await checkAdminAuthSchema();
+  const [adminAuthReady, brevoReady] = await Promise.all([checkAdminAuthSchema(), checkBrevoConnection()]);
   const canonicalReady = (() => { try { return new URL(process.env.NEXT_PUBLIC_SITE_URL || "").protocol === "https:"; } catch { return false; } })();
   const checks = [
     { label: "Administrator authentication", ready: adminAuthReady, detail: "Supabase Auth identity, active staff profile, roles, session revocation and audit log" },
     { label: "Durable order database", ready: isDurableOrderStorageConfigured(), detail: "Supabase server-secret connection for private order access" },
     { label: "Customer order privacy", ready: isProductionOrderAccessConfigured(), detail: "Signed access grants prevent order-reference enumeration" },
     { label: "Stripe hosted checkout", ready: isStripeConfigured(), detail: "Hosted Checkout, authenticated queries and signed webhook reconciliation" },
-    { label: "Worldpay hosted checkout", ready: isWorldpayCheckoutEnabled(), detail: "Hosted Payment Pages with API credentials and merchant entity" },
-    { label: "Worldpay signed events", ready: isWorldpayWebhookSignatureConfigured(), detail: "Raw-body HMAC verification for payment lifecycle events" },
+    { label: "Brevo transactional email", ready: brevoReady, detail: "Authenticated API reachability plus idempotent customer and owner notices" },
     { label: "Secure production origin", ready: canonicalReady, detail: "HTTPS canonical origin for secure cookies and return URLs" },
   ];
   const ready = checks.filter((check) => check.ready).length;

@@ -9,7 +9,7 @@ A Next.js website and online ordering system for Malabar Coast, a Kerala-inspire
 - Tailwind CSS
 - GSAP + Lenis for scroll and motion
 - Supabase for durable order storage
-- Stripe and Worldpay for payments
+- Stripe for hosted card payments
 
 ## Getting started
 
@@ -59,8 +59,9 @@ Run the current `supabase/schema.sql` before deploying the matching application 
 
 ## Documentation
 
-- [PAYMENTS.md](./PAYMENTS.md) — orders, Stripe, and Worldpay integration notes
+- [PAYMENTS.md](./PAYMENTS.md) — orders and Stripe integration notes
 - [SUPABASE.md](./SUPABASE.md) — database schema, administrator roles, provisioning and deployment verification
 - [SECURITY.md](./SECURITY.md) — admin access, private order routes, headers and launch checklist
+- [BOOKINGS_AND_EMAIL.md](./BOOKINGS_AND_EMAIL.md) — table capacity, hall workflow, Brevo setup and deployment order
 - [LESSONS.md](./LESSONS.md) — responsive design and editorial composition notes
 - [progress.txt](./progress.txt) — build log

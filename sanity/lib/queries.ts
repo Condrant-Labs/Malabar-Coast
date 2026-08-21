@@ -8,8 +8,8 @@ export const menuContentQuery = defineQuery(`{
     "description": coalesce(description, ""),
     orderRank
   },
-  "items": *[_type == "menuItem"] | order(category->orderRank asc, displayOrder asc) {
-    "id": sourceKey,
+  "items": *[_type == "menuItem"] | order(category->orderRank asc, displayOrder asc, name asc) {
+    "id": coalesce(sourceKey, _id),
     "category": category->slug.current,
     name,
     "description": coalesce(description, ""),
@@ -46,8 +46,9 @@ export const menuContentQuery = defineQuery(`{
     dietaryNotice,
     alcoholNotice,
     voyageStops[] {
-      "itemId": dish->sourceKey,
-      port,
+      _key,
+      "itemId": coalesce(dish->sourceKey, dish->_id),
+      "area": coalesce(area, port),
       region,
       coordinates,
       "year": yearLabel,
@@ -63,8 +64,8 @@ export const menuContentQuery = defineQuery(`{
   }
 }`);
 
-export const checkoutMenuItemQuery = defineQuery(`*[_type == "menuItem" && sourceKey == $id][0] {
-  "id": sourceKey,
+export const checkoutMenuItemQuery = defineQuery(`*[_type == "menuItem" && (sourceKey == $id || _id == $id)][0] {
+  "id": coalesce(sourceKey, _id),
   name,
   pricePence,
   available,
@@ -139,3 +140,33 @@ export const testimonialsQuery = defineQuery(`*[_type == "testimonial" && publis
   rating,
   displayOrder
 }`);
+
+export const activePromotionsQuery = defineQuery(`
+  *[
+    _type == "promotion" &&
+    status == "active" &&
+    (!defined(startsAt) || startsAt <= now()) &&
+    (!defined(endsAt) || endsAt >= now())
+  ] | order(displayOrder asc, startsAt desc, _createdAt desc) {
+    _id,
+    title,
+    badge,
+    summary,
+    offerCode,
+    validityLabel,
+    startsAt,
+    endsAt,
+    showOnHomepage,
+    terms,
+    callToAction,
+    poster {
+      alt,
+      caption,
+      hotspot,
+      crop,
+      "url": asset->url,
+      "dimensions": asset->metadata.dimensions,
+      "lqip": asset->metadata.lqip
+    }
+  }
+`);

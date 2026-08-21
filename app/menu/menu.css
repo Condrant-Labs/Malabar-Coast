@@ -189,6 +189,19 @@
 .manifestIntro .menuKicker { align-self: start; color: #8c6028; }
 .manifestIntro h2 { margin: 0; font-family: "Bodoni 72", Didot, serif; font-size: clamp(3.4rem, 6.4vw, 7.5rem); font-weight: 400; line-height: .82; letter-spacing: -.05em; text-transform: uppercase; }
 .manifestIntro > p:last-child { max-width: 26rem; margin: 0; color: rgba(16,32,28,.7); font-family: "Iowan Old Style", Georgia, serif; line-height: 1.6; }
+.menuSearch { display: grid; grid-template-columns: minmax(8rem, .55fr) minmax(16rem, 1.45fr) minmax(8rem, .55fr); align-items: center; gap: 2rem; padding: 2rem 0; border-bottom: 1px solid rgba(16,32,28,.25); }
+.menuSearch > label { color: #8c6028; font-size: .58rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.menuSearch > div { position: relative; display: flex; align-items: center; }
+.menuSearch input { width: 100%; height: 3.6rem; padding: 0 6.4rem 0 2.6rem; border: 1px solid rgba(16,32,28,.36); border-radius: 0; outline: 0; background: rgba(255,255,255,.2); color: #10201c; font: 1rem/1.2 "Iowan Old Style", Georgia, serif; }
+.menuSearch input::placeholder { color: rgba(16,32,28,.5); }
+.menuSearch input:focus { border-color: #805621; box-shadow: 0 0 0 3px rgba(140,96,40,.13); }
+.menuSearch > div > span { position: absolute; left: .9rem; color: #805621; font-size: 1.4rem; }
+.menuSearch button { position: absolute; right: .7rem; min-height: 2.3rem; padding: 0 .7rem; border: 0; background: #10201c; color: #e8dfcb; cursor: pointer; font: inherit; font-size: .52rem; letter-spacing: .12em; text-transform: uppercase; }
+.menuSearch > p { margin: 0; color: rgba(16,32,28,.58); font-size: .64rem; letter-spacing: .08em; text-align: right; text-transform: uppercase; }
+.menuSearchEmpty { grid-column: 1 / -1; padding: 4rem 0; border-bottom: 1px solid rgba(16,32,28,.25); text-align: center; }
+.menuSearchEmpty p { margin: 0; font-family: "Iowan Old Style", Georgia, serif; font-size: clamp(1.8rem, 3vw, 3rem); }
+.menuSearchEmpty span { display: block; max-width: 34rem; margin: 1rem auto 1.5rem; color: rgba(16,32,28,.62); line-height: 1.6; }
+.menuSearchEmpty button { min-height: 3rem; padding: 0 1rem; border: 1px solid #10201c; background: transparent; color: #10201c; cursor: pointer; font: inherit; font-size: .56rem; letter-spacing: .15em; text-transform: uppercase; }
 .menuCategoryNav { display: flex; flex-wrap: wrap; gap: .5rem; padding: 2rem 0; border-bottom: 1px solid rgba(16,32,28,.25); }
 .menuCategoryNav a { padding: .65rem .8rem; border: 1px solid rgba(16,32,28,.3); font-size: .5rem; letter-spacing: .13em; text-transform: uppercase; transition: background .2s,color .2s; }
 .menuCategoryNav a:hover,.menuCategoryNav a:focus-visible { background: #10201c; color: #e8dfcb; outline: none; }
@@ -201,8 +214,8 @@
 .manifestCard ul { display: flex; flex-direction: column; gap: 1.4rem; margin: 0; padding: 0; list-style: none; }
 .manifestCard li { display: flex; justify-content: space-between; gap: 1.25rem; }
 .manifestCard li .manifestDish { display: flex; flex-direction: column; gap: .22rem; }
-.manifestCard li strong { font-family: "Iowan Old Style", Georgia, serif; font-size: 1.16rem; font-weight: 600; }
-.manifestCard li .manifestDish > span { color: rgba(16,32,28,.66); font-size: .76rem; letter-spacing: .02em; line-height: 1.45; }
+.manifestCard li strong { font-family: "Iowan Old Style", Georgia, serif; font-size: clamp(1.28rem, 1.45vw, 1.48rem); font-weight: 600; line-height: 1.18; }
+.manifestCard li .manifestDish > span { max-width: 34rem; color: rgba(16,32,28,.68); font-size: .84rem; letter-spacing: .01em; line-height: 1.55; }
 .manifestCard li small { max-width: 28rem; color: rgba(16,32,28,.54); font-size: .56rem; line-height: 1.45; text-transform: uppercase; }
 .manifestDishMeta { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .7rem; margin-top: .38rem; }
 .dietaryMarker { --dietary-color: #4d8f4f; display: inline-flex; align-items: center; gap: .48rem; width: fit-content; color: #173a20; font-size: .61rem; font-weight: 700; letter-spacing: .04em; line-height: 1.2; }
@@ -260,6 +273,8 @@
   .manifest { padding: 6rem 1.25rem; }
   .manifestIntro { display: block; padding-bottom: 2.5rem; }
   .manifestIntro h2 { margin-bottom: 1.5rem; }
+  .menuSearch { grid-template-columns: 1fr; gap: .8rem; padding: 1.5rem 0; }
+  .menuSearch > p { text-align: left; }
   .manifestGrid { grid-template-columns: 1fr; }
   .manifestCard { padding: 2.75rem 0; }
   .manifestCard li { align-items: flex-start; }
@@ -294,6 +309,8 @@
   .manifest { padding-top: 5rem; }
   .manifestCard { scroll-margin-top: 5.8rem; }
   .manifestCard li { gap: .8rem; }
+  .manifestCard li strong { font-size: 1.22rem; }
+  .manifestCard li .manifestDish > span { font-size: .82rem; }
   .manifestDish { min-width: 0; }
   .manifestOrder { flex-basis: 6.4rem; }
   .menuFooter { min-height: 48svh; }

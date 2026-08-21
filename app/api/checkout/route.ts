@@ -3,7 +3,6 @@ import { applyPaymentEvent, attachCheckoutProviderReference, createCheckoutOrder
 import { CheckoutValidationError, type OrderRecord, validateCheckout } from "../../lib/orders";
 import { setOrderAccess, isOrderAccessConfigured } from "../../lib/order-access";
 import { createStripeCheckout, isStripeConfigured } from "../../lib/payments/stripe";
-import { createWorldpayHostedPayment, isWorldpayCheckoutEnabled } from "../../lib/payments/worldpay";
 import { checkRateLimit, configuredSiteOrigin, getClientAddress, isTrustedOrigin, noStoreJson, readLimitedJson, RequestBodyTooLargeError } from "../../lib/security";
 
 export const runtime = "nodejs";
@@ -49,8 +48,7 @@ export async function POST(request: Request) {
     if (!/^[a-zA-Z0-9_-]{16,100}$/.test(requestedKey)) {
       throw new CheckoutValidationError("A valid idempotency key is required.");
     }
-    if (checkout.provider === "stripe" && !isStripeConfigured()) throw new CheckoutValidationError("Stripe checkout is not available.");
-    if (checkout.provider === "worldpay" && !isWorldpayCheckoutEnabled()) throw new CheckoutValidationError("Worldpay checkout is not available.");
+    if (!isStripeConfigured()) throw new CheckoutValidationError("Stripe checkout is not available.");
 
     const idempotencyKeyHash = digest(requestedKey);
     const requestFingerprint = checkoutFingerprint(checkout);
@@ -76,26 +74,11 @@ export async function POST(request: Request) {
     }
     const baseUrl = configuredSiteOrigin(request);
 
-    if (atomic.order.provider === "stripe") {
-      // Stripe uses the stable order ID as its idempotency key, so this also safely
-      // recovers a process that stopped after session creation but before persistence.
-      const payment = await createStripeCheckout(atomic.order, baseUrl);
-      const attached = await attachCheckoutProviderReference(atomic.order.id, "stripe", payment.providerReference, payment.redirectUrl);
-      if (!attached) throw new Error("Stripe checkout identity could not be attached to the order.");
-      return await orderResponse({ orderId: atomic.order.id, redirectUrl: payment.redirectUrl }, atomic.order.id);
-    }
-
-    if (!createdByRequest) {
-      return await orderResponse({ error: "This checkout request is already being processed.", orderId: atomic.order.id }, atomic.order.id, { status: 409 });
-    }
-
-    const payment = await createWorldpayHostedPayment(atomic.order, baseUrl);
-    // HPP creates the Worldpay payment only after the customer submits its hosted
-    // page, so the provider payment ID is intentionally bound later by a signed
-    // event or authenticated payment query. Binding the order ID here would reject
-    // the real payment ID when it arrives.
-    const attached = await attachCheckoutProviderReference(atomic.order.id, "worldpay", undefined, payment.redirectUrl);
-    if (!attached) throw new Error("Worldpay hosted checkout could not be attached to the order.");
+    // Stripe uses the stable order ID as its idempotency key, so this also safely
+    // recovers a process that stopped after session creation but before persistence.
+    const payment = await createStripeCheckout(atomic.order, baseUrl);
+    const attached = await attachCheckoutProviderReference(atomic.order.id, "stripe", payment.providerReference, payment.redirectUrl);
+    if (!attached) throw new Error("Stripe checkout identity could not be attached to the order.");
     return await orderResponse({ orderId: atomic.order.id, redirectUrl: payment.redirectUrl }, atomic.order.id);
   } catch (error) {
     if (order && createdByRequest) await applyPaymentEvent({

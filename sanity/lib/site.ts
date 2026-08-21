@@ -1,8 +1,9 @@
 import {site} from "@/app/lib/site";
 import {getSanityClient} from "./client";
 import {siteSettingsQuery} from "./queries";
+import {sanitisePublicLink, type PublicContentLink} from "./links";
 
-export type SiteLink = {label: string; href: string; openInNewTab?: boolean};
+export type SiteLink = PublicContentLink;
 export type SiteSettings = {
   restaurantName: string;
   legalName: string;
@@ -48,10 +49,11 @@ export const fallbackSiteSettings: SiteSettings = {
   primaryNavigation: [
     {label: "Our story", href: "/story"},
     {label: "The menu", href: "/menu"},
+    {label: "Offers", href: "/offers"},
+    {label: "Book a table", href: "/book-a-table"},
     {label: "Our restaurant", href: "/restaurant"},
     {label: "Private hall", href: "/hall"},
     {label: "Good to know", href: "/faq"},
-    {label: "Plan your visit", href: "/#reservations"},
     {label: "Your order", href: "/checkout"},
   ],
   footerNavigation: [
@@ -72,6 +74,17 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const settings = await client.fetch(siteSettingsQuery, {}, {next: {revalidate: 60, tags: ["sanity-site-settings"]}}) as Partial<SiteSettings> | null;
     if (!settings?.restaurantName) return fallbackSiteSettings;
+    const safePrimaryNavigation = settings.primaryNavigation?.map(sanitisePublicLink).filter((link): link is SiteLink => Boolean(link)) ?? [];
+    const safeFooterNavigation = settings.footerNavigation?.map(sanitisePublicLink).filter((link): link is SiteLink => Boolean(link)) ?? [];
+    const primaryNavigation = safePrimaryNavigation.length ? safePrimaryNavigation : fallbackSiteSettings.primaryNavigation;
+    const offersLink = {label: "Offers", href: "/offers"};
+    const navigationWithOffers = primaryNavigation.some((link) => link.href === offersLink.href)
+      ? primaryNavigation
+      : [...primaryNavigation.slice(0, 2), offersLink, ...primaryNavigation.slice(2)];
+    const bookingLink = {label: "Book a table", href: "/book-a-table"};
+    const navigationWithBooking = navigationWithOffers.some((link) => link.href === bookingLink.href)
+      ? navigationWithOffers
+      : [...navigationWithOffers.slice(0, 3), bookingLink, ...navigationWithOffers.slice(3)];
     return {
       ...fallbackSiteSettings,
       ...settings,
@@ -79,8 +92,8 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       coordinates: {...fallbackSiteSettings.coordinates, ...(settings.coordinates ?? {})},
       logo: settings.logo?.url ? settings.logo : fallbackSiteSettings.logo,
       lightLogo: settings.lightLogo?.url ? settings.lightLogo : fallbackSiteSettings.lightLogo,
-      primaryNavigation: settings.primaryNavigation?.length ? settings.primaryNavigation : fallbackSiteSettings.primaryNavigation,
-      footerNavigation: settings.footerNavigation?.length ? settings.footerNavigation : fallbackSiteSettings.footerNavigation,
+      primaryNavigation: navigationWithBooking,
+      footerNavigation: safeFooterNavigation.length ? safeFooterNavigation : fallbackSiteSettings.footerNavigation,
       socialLinks: settings.socialLinks?.length ? settings.socialLinks : fallbackSiteSettings.socialLinks,
     };
   } catch (error) {

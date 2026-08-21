@@ -280,7 +280,20 @@ body:has(.adminShell) { margin: 0; background: #f2efe7; }
 .adminStudioStatus > div:last-child p { display: grid; gap: .45rem; margin: 0; padding: 1rem; border: 1px solid var(--admin-line); border-radius: .4rem; }
 .adminStudioStatus > div:last-child strong { font-size: .72rem; }
 
+.adminBookingSettings { display: grid; grid-template-columns: repeat(4,minmax(8rem,1fr)); gap: .8rem; margin-top: 1rem; }
+.adminBookingSettings label { display: grid; gap: .4rem; color: var(--admin-muted); font-size: .56rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.adminBookingSettings input,.adminBookingSettings select,.adminInlineUpdate input,.adminInlineUpdate select { width: 100%; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--admin-line); border-radius: .3rem; background: #fff; color: var(--admin-ink); }
+.adminBookingSettings .adminCheckField { display: flex; min-height: 2.75rem; align-items: center; gap: .6rem; padding-top: 1rem; }
+.adminBookingSettings .adminCheckField input { width: 1rem; min-height: 1rem; accent-color: var(--admin-green); }
+.adminInlineUpdate { display: grid; width: min(16rem,100%); gap: .35rem; }
+.adminInlineUpdate button { min-height: 2.5rem; border: 0; border-radius: .3rem; background: var(--admin-ink); color: #fff; font-size: .55rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+.booking_confirmed,.hall_approved { border-color: #8cb6a4; background: #edf5f1; color: #226047; }
+.booking_cancelled,.booking_no_show,.hall_declined { border-color: #d4a09b; background: #fbefed; color: #913a34; }
+.hall_new { border-color: #d4ad72; background: #fbf4e8; color: #875619; }
+.hall_contacted { border-color: #81a9bb; background: #edf5f7; color: #275e73; }
+
 @media (max-width: 1180px) {
+  .adminBookingSettings { grid-template-columns: repeat(2,minmax(8rem,1fr)); }
   .adminPortal { grid-template-columns: 14rem minmax(0,1fr); }
   .adminSidebar { padding: 1rem; }
   .adminMetrics { grid-template-columns: repeat(2,1fr); }
@@ -312,6 +325,7 @@ body:has(.adminShell) { margin: 0; background: #f2efe7; }
 }
 
 @media (max-width: 560px) {
+  .adminBookingSettings { grid-template-columns: 1fr; }
   .adminWorkspace { padding: 1rem; }
   .adminPageHeader h1 { font-size: clamp(2.6rem,11vw,3.6rem); }
   .adminLoginCard h1 { font-size: clamp(2.6rem,11vw,3.3rem); overflow-wrap: anywhere; }

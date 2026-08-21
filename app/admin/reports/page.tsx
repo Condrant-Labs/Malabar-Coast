@@ -47,7 +47,6 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
           <div><span>Collection</span><strong>{report.collectionOrders}</strong><i><b style={{ width: `${report.paidOrders.length ? report.collectionOrders / report.paidOrders.length * 100 : 0}%` }} /></i></div>
           <div><span>Delivery</span><strong>{report.deliveryOrders}</strong><i><b style={{ width: `${report.paidOrders.length ? report.deliveryOrders / report.paidOrders.length * 100 : 0}%` }} /></i></div>
           <div><span>Stripe</span><strong>{report.stripeOrders}</strong><i><b style={{ width: `${report.paidOrders.length ? report.stripeOrders / report.paidOrders.length * 100 : 0}%` }} /></i></div>
-          <div><span>Worldpay</span><strong>{report.worldpayOrders}</strong><i><b style={{ width: `${report.paidOrders.length ? report.worldpayOrders / report.paidOrders.length * 100 : 0}%` }} /></i></div>
         </div>
       </article>
     </section>

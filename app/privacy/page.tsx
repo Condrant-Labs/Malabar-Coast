@@ -31,6 +31,8 @@ const sections: LegalSection[] = [
     content: (
       <ul>
         <li><strong>Order data</strong> — name, email, phone number, order details, collection or delivery information, and payment confirmation. We do not store full card details.</li>
+        <li><strong>Table reservation data</strong> — contact details, date, arrival time, party size, occasion, dietary information, accessibility requirements and booking notes.</li>
+        <li><strong>Hall enquiry data</strong> — contact details, preferred and alternative dates, estimated guest count, occasion, contact preference and the event information you provide.</li>
         <li><strong>Communications & support data</strong> — messages you send us by email, phone or another available contact channel, plus feedback or reviews you provide.</li>
         <li><strong>Marketing preferences</strong> — your consent choices and how you engage with messages, if marketing subscriptions are introduced.</li>
         <li><strong>Device & usage data</strong> — technical request and security information. Additional analytics or advertising data would only be collected after valid consent.</li>
@@ -47,6 +49,7 @@ const sections: LegalSection[] = [
         <div className="legalTableWrap"><table className="legalTable"><thead><tr><th>What we do</th><th>Lawful basis</th></tr></thead><tbody>
           <tr><td>Process and fulfil orders, take payment, provide confirmations and customer support.</td><td>Performance of our contract with you.</td></tr>
           <tr><td>Send service messages about an order or delivery.</td><td>Contract; our legitimate interest in keeping you informed.</td></tr>
+          <tr><td>Manage table reservations, hall enquiries and related service messages.</td><td>Steps taken at your request; performance of a contract where a booking is confirmed; our legitimate interest in operating the restaurant.</td></tr>
           <tr><td>Send marketing messages, if offered.</td><td>Your consent, which you can withdraw at any time.</td></tr>
           <tr><td>Set non-essential analytics or advertising storage, if introduced.</td><td>Your consent.</td></tr>
           <tr><td>Operate, secure and improve the Site, prevent fraud and keep business records.</td><td>Our legitimate interests; legal obligations.</td></tr>
@@ -67,8 +70,9 @@ const sections: LegalSection[] = [
       <>
         <p>We do not sell personal data. We share it only with trusted service providers acting on our instructions, where needed to provide the service, or where required by law. These may include:</p>
         <ul>
-          <li><strong>Stripe and Worldpay</strong> — secure hosted payment processing and payment-status confirmation.</li>
+          <li><strong>Stripe</strong> — secure hosted payment processing and payment-status confirmation.</li>
           <li><strong>Supabase</strong> — secure database and application services used to store and process order records.</li>
+          <li><strong>Brevo</strong> — transactional email delivery for order, table reservation and hall enquiry messages.</li>
           <li><strong>Delivery partners</strong> — where needed to fulfil a delivery order.</li>
           <li><strong>Professional and regulatory recipients</strong> — where necessary to comply with law or establish, exercise or defend legal rights.</li>
         </ul>
@@ -83,7 +87,7 @@ const sections: LegalSection[] = [
   {
     id: "retention",
     title: "How long we keep personal data",
-    content: <p>We keep personal data only for as long as necessary for the purposes above. Order and transaction records are generally retained for up to seven years to meet tax and accounting obligations. Consent records are retained for as long as needed to demonstrate and honour your choice. Data that is no longer required is securely deleted or anonymised.</p>,
+    content: <p>We keep personal data only for as long as necessary for the purposes above. Order and transaction records are generally retained for up to seven years to meet tax and accounting obligations. Reservation and enquiry details are retained only for operational, dispute and record-keeping needs, then deleted or anonymised under the restaurant&apos;s approved retention schedule. Consent records are retained for as long as needed to demonstrate and honour your choice.</p>,
   },
   {
     id: "security",
@@ -108,7 +112,7 @@ const sections: LegalSection[] = [
   {
     id: "required-data",
     title: "If you do not provide personal data",
-    content: <p>Some information is necessary for us to take payment and fulfil an order. If you choose not to provide it, we may be unable to process the order or provide the relevant service.</p>,
+    content: <p>Some information is necessary for us to take payment, fulfil an order, reserve a table or respond to a hall enquiry. If you choose not to provide it, we may be unable to provide the relevant service.</p>,
   },
   {
     id: "children",

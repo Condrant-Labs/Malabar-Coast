@@ -61,13 +61,14 @@
 .checkoutSectionHeading h2 { margin: 0; font-family: "Iowan Old Style",Georgia,serif; font-size: clamp(1.8rem,3vw,3rem); font-weight: 400; }
 .fieldGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.1rem; }
 .fieldGrid label:first-child { grid-column: 1/-1; }
-.checkoutSection label,.worldpayFields label { color: rgba(16,32,28,.68); font-size: .5rem; letter-spacing: .13em; text-transform: uppercase; }
+.checkoutSection label { color: rgba(16,32,28,.68); font-size: .5rem; letter-spacing: .13em; text-transform: uppercase; }
 .checkoutSection input,.checkoutSection textarea { display: block; width: 100%; min-height: 3.4rem; margin-top: .45rem; padding: .8rem; border: 1px solid rgba(16,32,28,.28); border-radius: 0; background: rgba(255,255,255,.18); color: #10201c; font: inherit; font-size: .9rem; }
 .checkoutSection textarea { min-height: 6rem; resize: vertical; }
 .checkoutSection input:focus,.checkoutSection textarea:focus { border-color: #8a5d24; outline: 1px solid #8a5d24; outline-offset: -1px; }
 .choiceCards { display: grid; grid-template-columns: repeat(2,1fr); gap: .8rem; margin-bottom: 1.5rem; }
-.choiceCards label { position: relative; display: flex; flex-direction: column; gap: .45rem; min-height: 7.5rem; padding: 1.25rem; border: 1px solid rgba(16,32,28,.26); cursor: pointer; transition: background .2s,border-color .2s; }
-.choiceCards label.isSelected { border-color: #8a5d24; background: rgba(199,155,85,.14); }
+.choiceCards label,.choiceCards > div { position: relative; display: flex; flex-direction: column; gap: .45rem; min-height: 7.5rem; padding: 1.25rem; border: 1px solid rgba(16,32,28,.26); transition: background .2s,border-color .2s; }
+.choiceCards label { cursor: pointer; }
+.choiceCards label.isSelected,.choiceCards > div.isSelected { border-color: #8a5d24; background: rgba(199,155,85,.14); }
 .choiceCards input { position: absolute; top: .8rem; right: .8rem; width: 1rem; min-height: 1rem; margin: 0; accent-color: #8a5d24; }
 .choiceCards strong { margin-top: auto; font-family: "Iowan Old Style",Georgia,serif; font-size: 1.2rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .choiceCards span { color: rgba(16,32,28,.54); font-size: .6rem; letter-spacing: 0; text-transform: none; }
@@ -76,10 +77,6 @@
 .addressFields label:first-child { grid-column: auto; }
 .paymentNotice,.checkoutError { margin: 0 0 1rem; padding: 1rem; border-left: 2px solid #9d5e31; background: rgba(157,94,49,.12); font-family: "Iowan Old Style",Georgia,serif; font-size: .85rem; line-height: 1.5; }
 .providerExplanation { margin: .5rem 0 0; color: rgba(16,32,28,.6); font-family: "Iowan Old Style",Georgia,serif; }
-.worldpayFields { padding: 1.25rem; border: 1px solid rgba(16,32,28,.25); background: rgba(255,255,255,.15); }
-.worldpayStatus { margin-bottom: 1rem; color: rgba(16,32,28,.6); font-size: .7rem; }
-.worldpayField { height: 3.25rem; margin-top: .45rem; padding: .75rem; border: 1px solid rgba(16,32,28,.28); background: rgba(255,255,255,.22); }
-.worldpayFieldRow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
 .checkoutSummary { position: sticky; top: 1.5rem; border: 1px solid rgba(16,32,28,.25); background: #efe6d4; }
 .summaryHeading { display: flex; align-items: flex-end; justify-content: space-between; padding: 1.4rem; border-bottom: 1px solid rgba(16,32,28,.2); }
 .summaryHeading > div { display: flex; flex-direction: column; gap: .3rem; }
@@ -149,7 +146,7 @@
 
 @media (max-width: 620px) {
   .checkoutLayout { padding-top: 7rem; padding-bottom: 4rem; }
-  .fieldGrid,.choiceCards,.worldpayFieldRow { grid-template-columns: 1fr; }
+  .fieldGrid,.choiceCards { grid-template-columns: 1fr; }
   .fieldGrid label:first-child { grid-column: auto; }
   .choiceCards label { min-height: 6.5rem; }
   .checkoutResult > div > div { flex-direction: column; }

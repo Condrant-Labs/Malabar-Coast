@@ -9,6 +9,7 @@ import {
 } from "../../../lib/payments/stripe";
 import { isValidOrderId, noStoreJson, readLimitedText, RequestBodyTooLargeError } from "../../../lib/security";
 import { publishPaymentCompletionEvent } from "@/app/lib/publishEvent";
+import { notifyPaidOrder } from "@/app/lib/email/notifications";
 
 export const runtime = "nodejs";
 
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
     });
     if (applied && paymentStatus==="paid" && inferPaymentStatus(order) !== "paid"){
       await publishPaymentCompletionEvent(orderId);
+      await notifyPaidOrder(order);
     }
   }
   return noStoreJson({ received: true });

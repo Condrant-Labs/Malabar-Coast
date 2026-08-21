@@ -9,7 +9,16 @@ export const menuItem = defineType({
   fields: [
     defineField({name: 'name', title: 'Name', type: 'string', validation: (rule) => rule.required()}),
     defineField({name: 'slug', title: 'Slug', type: 'slug', options: {source: 'name'}, validation: (rule) => rule.required()}),
-    defineField({name: 'sourceKey', title: 'Stable ordering key', type: 'string', readOnly: true}),
+    defineField({
+      name: 'sourceKey',
+      title: 'Legacy catalogue key',
+      type: 'string',
+      description: 'Kept for dishes imported from the original menu. New dishes use their Sanity document ID automatically.',
+      deprecated: {reason: 'New menu items no longer need this imported catalogue key.'},
+      readOnly: true,
+      hidden: ({value}) => value === undefined,
+      initialValue: undefined,
+    }),
     defineField({name: 'category', title: 'Category', type: 'reference', to: [{type: 'menuCategory'}], validation: (rule) => rule.required()}),
     defineField({name: 'description', title: 'Description', type: 'text', rows: 3, description: 'Optional until the kitchen approves final dish descriptions.'}),
     defineField({name: 'subheading', title: 'Subheading', type: 'string', description: 'Used for groups such as Whisky, Rum or House Wines.'}),
@@ -38,7 +47,7 @@ export const menuItem = defineType({
     defineField({name: 'available', title: 'Available', type: 'boolean', initialValue: true}),
     defineField({name: 'onlineOrdering', title: 'Allow online ordering', type: 'boolean', initialValue: true}),
     defineField({name: 'featured', title: 'Featured dish', type: 'boolean', initialValue: false}),
-    defineField({name: 'displayOrder', title: 'Order within category', type: 'number', validation: (rule) => rule.required().integer().min(0)}),
+    defineField({name: 'displayOrder', title: 'Order within category', type: 'number', initialValue: 100, validation: (rule) => rule.required().integer().min(0)}),
   ],
   validation: (rule) => rule.custom((item) => {
     if (item?.onlineOrdering && (item.pricePence === undefined || item.pricePence === null)) return 'Online-orderable items need a price.'

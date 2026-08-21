@@ -11,6 +11,7 @@ import {menuItem} from './documents/menuItem'
 import {menuPage} from './documents/menuPage'
 import {siteSettings} from './documents/siteSettings'
 import {testimonial} from './documents/testimonial'
+import {promotion} from './documents/promotion'
 
 export const schemaTypes = [
   imageWithAlt,
@@ -26,4 +27,5 @@ export const schemaTypes = [
   faqItem,
   legalPage,
   testimonial,
+  promotion,
 ]

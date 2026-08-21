@@ -2,11 +2,12 @@ import {getMarketingPage, getPageSection, portableTextToPlainText} from "@/sanit
 import {HomeExperience, type HomeCmsContent} from "./home-experience";
 import {getMenuContent} from "@/sanity/lib/menu";
 import {getTestimonials} from "@/sanity/lib/testimonials";
+import {getActivePromotions} from "@/sanity/lib/promotions";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [page, {items: menuItems}, testimonials] = await Promise.all([getMarketingPage("home"), getMenuContent(), getTestimonials()]);
+  const [page, {items: menuItems}, testimonials, promotions] = await Promise.all([getMarketingPage("home"), getMenuContent(), getTestimonials(), getActivePromotions()]);
   const overview = getPageSection(page, "home-overview");
   const reservations = getPageSection(page, "home-reservations");
   const content: HomeCmsContent = page ? {
@@ -26,5 +27,5 @@ export default async function HomePage() {
     reservationSecondaryLink: reservations?.secondaryLink,
     testimonials,
   } : {};
-  return <HomeExperience content={content} menuItems={menuItems} />;
+  return <HomeExperience content={content} menuItems={menuItems} promotions={promotions} />;
 }

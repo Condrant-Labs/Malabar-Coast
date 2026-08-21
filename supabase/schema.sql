@@ -35,10 +35,8 @@ do $$ begin
   )) not valid;
 exception when duplicate_object then null; end $$;
 
-do $$ begin
-  alter table public.orders add constraint orders_provider_check
-    check (provider in ('stripe', 'worldpay')) not valid;
-exception when duplicate_object then null; end $$;
+alter table public.orders drop constraint if exists orders_provider_check;
+alter table public.orders add constraint orders_provider_check check (provider = 'stripe') not valid;
 
 do $$ begin
   alter table public.orders add constraint orders_id_shape_check
@@ -69,10 +67,8 @@ alter table public.order_payment_events add column if not exists currency text;
 create index if not exists order_payment_events_order_id_idx
   on public.order_payment_events (order_id, created_at desc);
 
-do $$ begin
-  alter table public.order_payment_events add constraint order_payment_events_provider_check
-    check (provider in ('stripe', 'worldpay')) not valid;
-exception when duplicate_object then null; end $$;
+alter table public.order_payment_events drop constraint if exists order_payment_events_provider_check;
+alter table public.order_payment_events add constraint order_payment_events_provider_check check (provider = 'stripe') not valid;
 
 do $$ begin
   alter table public.order_payment_events add constraint order_payment_events_status_check
@@ -298,7 +294,7 @@ declare
   existing_fingerprint text;
 begin
   if p_id is null or p_id !~ '^ord_[A-Za-z0-9_-]{20,60}$'
-    or p_provider is null or p_provider not in ('stripe', 'worldpay')
+    or p_provider is null or p_provider <> 'stripe'
     or p_idempotency_key_hash is null or p_idempotency_key_hash !~ '^[a-f0-9]{64}$'
     or p_request_fingerprint is null or p_request_fingerprint !~ '^[a-f0-9]{64}$'
     or p_data->>'id' is distinct from p_id
@@ -574,7 +570,7 @@ declare
   recent_event_ids jsonb;
   next_history jsonb;
 begin
-  if p_provider is null or p_provider not in ('stripe', 'worldpay')
+  if p_provider is null or p_provider <> 'stripe'
     or p_payment_status is null or p_payment_status not in ('pending', 'paid', 'failed', 'cancelled', 'expired', 'partially_refunded', 'refunded', 'disputed', 'reversed')
     or p_event_id is null or length(p_event_id) < 3 or length(p_event_id) > 180
     or p_order_id is null or length(p_order_id) < 16 or length(p_order_id) > 80
@@ -754,13 +750,155 @@ grant execute on function public.admin_auth_health() to service_role;
 -- Constraints created NOT VALID protect new rows immediately. Validate them before
 -- advancing the schema version so legacy invalid data cannot be mistaken for ready.
 alter table public.orders validate constraint orders_status_check;
-alter table public.orders validate constraint orders_provider_check;
 alter table public.orders validate constraint orders_id_shape_check;
-alter table public.order_payment_events validate constraint order_payment_events_provider_check;
 alter table public.order_payment_events validate constraint order_payment_events_status_check;
 
+create table if not exists public.restaurant_booking_settings (
+  id smallint primary key default 1 check (id = 1),
+  capacity integer not null default 40 check (capacity between 1 and 500),
+  sitting_minutes integer not null default 90 check (sitting_minutes in (60, 90, 120, 150, 180)),
+  slot_minutes integer not null default 30 check (slot_minutes in (15, 30, 60)),
+  minimum_party_size integer not null default 1 check (minimum_party_size between 1 and 20),
+  maximum_party_size integer not null default 12 check (maximum_party_size between 1 and 100),
+  first_sitting time not null default '12:00',
+  last_sitting time not null default '21:00',
+  minimum_lead_minutes integer not null default 120 check (minimum_lead_minutes between 0 and 10080),
+  advance_days integer not null default 90 check (advance_days between 1 and 365),
+  booking_enabled boolean not null default true,
+  updated_at timestamptz not null default now(),
+  constraint booking_settings_party_range check (maximum_party_size >= minimum_party_size),
+  constraint booking_settings_time_range check (last_sitting > first_sitting)
+);
+insert into public.restaurant_booking_settings (id) values (1) on conflict (id) do nothing;
+revoke all on table public.restaurant_booking_settings from anon, authenticated;
+
+create table if not exists public.table_reservations (
+  id text primary key,
+  reference text not null unique,
+  status text not null default 'confirmed' check (status in ('confirmed', 'cancelled', 'completed', 'no_show')),
+  name text not null, email text not null, phone text not null,
+  booking_date date not null, start_time time not null, end_time time not null,
+  party_size integer not null check (party_size between 1 and 100),
+  occasion text not null default '', accessibility_needs text not null default '',
+  dietary_requirements text not null default '', notes text not null default '', admin_notes text not null default '',
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  constraint table_reservation_time_range check (end_time > start_time)
+);
+create index if not exists table_reservations_slot_idx on public.table_reservations (booking_date, start_time, end_time) where status = 'confirmed';
+revoke all on table public.table_reservations from anon, authenticated;
+
+create table if not exists public.hall_enquiries (
+  id text primary key, reference text not null unique,
+  status text not null default 'new' check (status in ('new', 'contacted', 'approved', 'declined')),
+  name text not null, email text not null, phone text not null,
+  preferred_date date not null, preferred_time text not null default '', alternative_date date,
+  guest_count integer check (guest_count between 1 and 500), occasion text not null default '',
+  message text not null, contact_preference text not null default 'phone' check (contact_preference in ('phone', 'email')),
+  admin_notes text not null default '', created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create index if not exists hall_enquiries_status_created_idx on public.hall_enquiries (status, created_at desc);
+revoke all on table public.hall_enquiries from anon, authenticated;
+
+create table if not exists public.email_delivery_log (
+  event_key text primary key,
+  category text not null,
+  recipient text not null,
+  status text not null default 'sending' check (status in ('sending','sent','failed')),
+  attempts integer not null default 1,
+  last_error text not null default '',
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(), sent_at timestamptz
+);
+revoke all on table public.email_delivery_log from anon, authenticated;
+
+create or replace function public.claim_email_delivery(p_event_key text,p_category text,p_recipient text)
+returns boolean language plpgsql security definer set search_path=public as $$
+declare claimed_rows integer := 0;
+begin
+  insert into public.email_delivery_log(event_key,category,recipient) values(left(p_event_key,180),left(p_category,60),lower(left(p_recipient,160)))
+  on conflict(event_key) do update set status='sending',attempts=email_delivery_log.attempts+1,updated_at=now(),last_error=''
+    where email_delivery_log.status='failed' and email_delivery_log.attempts < 5;
+  get diagnostics claimed_rows = row_count;
+  return claimed_rows > 0;
+end $$;
+revoke all on function public.claim_email_delivery(text,text,text) from public; grant execute on function public.claim_email_delivery(text,text,text) to service_role;
+
+create or replace function public.complete_email_delivery(p_event_key text,p_sent boolean,p_error text default '')
+returns void language sql security definer set search_path=public as $$
+  update public.email_delivery_log set status=case when p_sent then 'sent' else 'failed' end,last_error=left(coalesce(p_error,''),300),sent_at=case when p_sent then now() else sent_at end,updated_at=now() where event_key=p_event_key;
+$$;
+revoke all on function public.complete_email_delivery(text,boolean,text) from public; grant execute on function public.complete_email_delivery(text,boolean,text) to service_role;
+
+create or replace function public.create_table_reservation(p_data jsonb)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare s public.restaurant_booking_settings%rowtype; r public.table_reservations%rowtype; occupied integer;
+begin
+  select * into s from public.restaurant_booking_settings where id = 1;
+  if not s.booking_enabled then raise exception 'BOOKING_DISABLED'; end if;
+  if (p_data->>'partySize')::integer < s.minimum_party_size or (p_data->>'partySize')::integer > s.maximum_party_size then raise exception 'INVALID_PARTY_SIZE'; end if;
+  if (p_data->>'endTime')::time <= (p_data->>'startTime')::time then raise exception 'INVALID_TIME'; end if;
+  perform pg_advisory_xact_lock(hashtext(p_data->>'bookingDate'));
+  select coalesce(sum(party_size), 0) into occupied from public.table_reservations
+    where booking_date = (p_data->>'bookingDate')::date and status = 'confirmed'
+      and start_time < (p_data->>'endTime')::time and end_time > (p_data->>'startTime')::time;
+  if occupied + (p_data->>'partySize')::integer > s.capacity then raise exception 'CAPACITY_EXCEEDED'; end if;
+  insert into public.table_reservations (id, reference, name, email, phone, booking_date, start_time, end_time, party_size, occasion, accessibility_needs, dietary_requirements, notes)
+  values ('res_' || replace(gen_random_uuid()::text, '-', ''), 'MC-TABLE-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)), left(p_data->>'name',100), lower(left(p_data->>'email',160)), left(p_data->>'phone',40), (p_data->>'bookingDate')::date, (p_data->>'startTime')::time, (p_data->>'endTime')::time, (p_data->>'partySize')::integer, left(coalesce(p_data->>'occasion',''),80), left(coalesce(p_data->>'accessibilityNeeds',''),400), left(coalesce(p_data->>'dietaryRequirements',''),400), left(coalesce(p_data->>'notes',''),600)) returning * into r;
+  return jsonb_build_object('id',r.id,'reference',r.reference,'createdAt',r.created_at,'updatedAt',r.updated_at,'status',r.status,'name',r.name,'email',r.email,'phone',r.phone,'bookingDate',r.booking_date,'startTime',to_char(r.start_time,'HH24:MI'),'endTime',to_char(r.end_time,'HH24:MI'),'partySize',r.party_size,'occasion',r.occasion,'accessibilityNeeds',r.accessibility_needs,'dietaryRequirements',r.dietary_requirements,'notes',r.notes,'adminNotes',r.admin_notes);
+end $$;
+revoke all on function public.create_table_reservation(jsonb) from public; grant execute on function public.create_table_reservation(jsonb) to service_role;
+
+create or replace function public.update_table_reservation(p_reservation_id text, p_status text, p_admin_notes text, p_actor_user_id uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare r public.table_reservations%rowtype; actor_email text; actor_role text;
+begin
+  select email,role into actor_email,actor_role from public.admin_profiles where user_id=p_actor_user_id and is_active and role in ('owner','admin','manager');
+  if not found then return null; end if;
+  if p_status not in ('confirmed','cancelled','completed','no_show') then return null; end if;
+  update public.table_reservations set status=p_status, admin_notes=left(coalesce(p_admin_notes,''),1000), updated_at=now() where id=p_reservation_id returning * into r;
+  if r.id is null then return null; end if;
+  insert into public.admin_audit_log(actor_user_id,actor_email,actor_role,action,target_type,target_id,metadata) values(p_actor_user_id,actor_email,actor_role,'reservation.updated','table_reservation',r.id,jsonb_build_object('status',p_status));
+  return jsonb_build_object('id',r.id,'reference',r.reference,'status',r.status,'name',r.name,'email',r.email,'phone',r.phone,'bookingDate',r.booking_date,'startTime',to_char(r.start_time,'HH24:MI'),'endTime',to_char(r.end_time,'HH24:MI'),'partySize',r.party_size,'adminNotes',r.admin_notes);
+end $$;
+revoke all on function public.update_table_reservation(text,text,text,uuid) from public; grant execute on function public.update_table_reservation(text,text,text,uuid) to service_role;
+
+create or replace function public.update_restaurant_booking_settings(p_settings jsonb, p_actor_user_id uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare s public.restaurant_booking_settings%rowtype; actor_email text; actor_role text;
+begin
+  select email,role into actor_email,actor_role from public.admin_profiles where user_id=p_actor_user_id and is_active and role in ('owner','admin','manager');
+  if not found then return null; end if;
+  update public.restaurant_booking_settings set capacity=(p_settings->>'capacity')::integer,sitting_minutes=(p_settings->>'sittingMinutes')::integer,slot_minutes=(p_settings->>'slotMinutes')::integer,minimum_party_size=(p_settings->>'minimumPartySize')::integer,maximum_party_size=(p_settings->>'maximumPartySize')::integer,first_sitting=(p_settings->>'firstSitting')::time,last_sitting=(p_settings->>'lastSitting')::time,minimum_lead_minutes=(p_settings->>'minimumLeadMinutes')::integer,advance_days=(p_settings->>'advanceDays')::integer,booking_enabled=(p_settings->>'bookingEnabled')::boolean,updated_at=now() where id=1 returning * into s;
+  insert into public.admin_audit_log(actor_user_id,actor_email,actor_role,action,target_type,target_id,metadata) values(p_actor_user_id,actor_email,actor_role,'booking.settings.updated','booking_settings','1',p_settings);
+  return p_settings;
+end $$;
+revoke all on function public.update_restaurant_booking_settings(jsonb,uuid) from public; grant execute on function public.update_restaurant_booking_settings(jsonb,uuid) to service_role;
+
+create or replace function public.create_hall_enquiry(p_data jsonb)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare h public.hall_enquiries%rowtype;
+begin
+  insert into public.hall_enquiries(id,reference,name,email,phone,preferred_date,preferred_time,alternative_date,guest_count,occasion,message,contact_preference)
+  values(left(p_data->>'id',80),left(p_data->>'reference',40),left(p_data->>'name',100),lower(left(p_data->>'email',160)),left(p_data->>'phone',40),(p_data->>'preferredDate')::date,left(coalesce(p_data->>'preferredTime',''),40),nullif(p_data->>'alternativeDate','')::date,nullif(p_data->>'guestCount','')::integer,left(coalesce(p_data->>'occasion',''),100),left(p_data->>'message',1000),case when p_data->>'contactPreference'='email' then 'email' else 'phone' end) returning * into h;
+  return jsonb_build_object('id',h.id,'reference',h.reference,'createdAt',h.created_at,'updatedAt',h.updated_at,'status',h.status,'name',h.name,'email',h.email,'phone',h.phone,'preferredDate',h.preferred_date,'preferredTime',h.preferred_time,'alternativeDate',coalesce(h.alternative_date::text,''),'guestCount',h.guest_count,'occasion',h.occasion,'message',h.message,'contactPreference',h.contact_preference,'adminNotes',h.admin_notes);
+end $$;
+revoke all on function public.create_hall_enquiry(jsonb) from public; grant execute on function public.create_hall_enquiry(jsonb) to service_role;
+
+create or replace function public.update_hall_enquiry(p_enquiry_id text,p_status text,p_admin_notes text,p_actor_user_id uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare h public.hall_enquiries%rowtype; actor_email text; actor_role text;
+begin
+  select email,role into actor_email,actor_role from public.admin_profiles where user_id=p_actor_user_id and is_active and role in ('owner','admin','manager');
+  if not found then return null; end if;
+  if p_status not in ('new','contacted','approved','declined') then return null; end if;
+  update public.hall_enquiries set status=p_status,admin_notes=left(coalesce(p_admin_notes,''),1000),updated_at=now() where id=p_enquiry_id returning * into h;
+  if h.id is null then return null; end if;
+  insert into public.admin_audit_log(actor_user_id,actor_email,actor_role,action,target_type,target_id,metadata) values(p_actor_user_id,actor_email,actor_role,'hall.enquiry.updated','hall_enquiry',h.id,jsonb_build_object('status',p_status));
+  return jsonb_build_object('id',h.id,'reference',h.reference,'status',h.status,'name',h.name,'email',h.email,'phone',h.phone,'preferredDate',h.preferred_date,'preferredTime',h.preferred_time,'guestCount',h.guest_count,'occasion',h.occasion,'message',h.message,'contactPreference',h.contact_preference,'adminNotes',h.admin_notes);
+end $$;
+revoke all on function public.update_hall_enquiry(text,text,text,uuid) from public; grant execute on function public.update_hall_enquiry(text,text,text,uuid) to service_role;
+
 insert into public.app_schema_versions (version, description)
-values ('2026-08-15-supabase-admin-auth-v3', 'Supabase Auth administrator profiles, role authorization and audit logging')
+values ('2026-08-22-bookings-v4', 'Stripe-only orders, table reservation capacity and hall enquiry operations')
 on conflict (version) do nothing;
 
 -- Readiness contract. Keep this last: if applying any required table or function above
@@ -773,11 +911,14 @@ security definer
 set search_path = public
 as $$
   select jsonb_build_object(
-    'version', '2026-08-15-supabase-admin-auth-v3',
+    'version', '2026-08-22-bookings-v4',
     'ordersTable', to_regclass('public.orders') is not null,
     'paymentEventsTable', to_regclass('public.order_payment_events') is not null,
     'adminProfilesTable', to_regclass('public.admin_profiles') is not null,
-    'adminAuditLogTable', to_regclass('public.admin_audit_log') is not null
+    'adminAuditLogTable', to_regclass('public.admin_audit_log') is not null,
+    'reservationsTable', to_regclass('public.table_reservations') is not null,
+    'hallEnquiriesTable', to_regclass('public.hall_enquiries') is not null,
+    'emailDeliveryLogTable', to_regclass('public.email_delivery_log') is not null
   );
 $$;
 

@@ -16,8 +16,20 @@ function ShipMark() {
 export function MenuExperience({categories, items, page}: {categories: MenuCategory[]; items: MenuItem[]; page: MenuPageContent}) {
   const voyageRef = useRef<HTMLElement>(null);
   const [activeStop, setActiveStop] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemById = useMemo(() => new Map(items.map((menuItem) => [menuItem.id, menuItem])), [items]);
   const voyageStops = page.voyageStops.filter((stop) => itemById.has(stop.itemId));
+  const normalisedSearch = searchQuery.trim().toLocaleLowerCase("en-GB");
+  const filteredItems = useMemo(() => {
+    if (!normalisedSearch) return items;
+    const categoryBySlug = new Map(categories.map((category) => [category.slug, `${category.title} ${category.note}`.toLocaleLowerCase("en-GB")]));
+    return items.filter((dish) => [dish.name, dish.description, dish.subheading, categoryBySlug.get(dish.category)]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase("en-GB")
+      .includes(normalisedSearch));
+  }, [categories, items, normalisedSearch]);
+  const visibleCategories = useMemo(() => categories.filter((category) => filteredItems.some((dish) => dish.category === category.slug)), [categories, filteredItems]);
 
   useEffect(() => {
     let frame = 0;
@@ -47,7 +59,7 @@ export function MenuExperience({categories, items, page}: {categories: MenuCateg
   const handleStopSelect = useCallback((index: number) => {
     const section = voyageRef.current;
     if (!section) return;
-    if (window.innerWidth <= 820) return document.getElementById(`port-${index}`)?.scrollIntoView({behavior: "smooth"});
+    if (window.innerWidth <= 820) return document.getElementById(`area-${index}`)?.scrollIntoView({behavior: "smooth"});
     const distance = section.offsetHeight - window.innerHeight;
     window.scrollTo({top: section.offsetTop + distance * (index / Math.max(voyageStops.length - 1, 1)), behavior: "smooth"});
   }, [voyageStops.length]);
@@ -63,18 +75,18 @@ export function MenuExperience({categories, items, page}: {categories: MenuCateg
         <div className="prologueCoordinates" aria-hidden="true"><span>11.2588° N</span><i /><span>55.8207° N</span></div>
       </section>
 
-      {voyageStops.length > 0 && <section className="menuVoyage" id="voyage" ref={voyageRef} style={{"--voyage-progress": 0} as React.CSSProperties} aria-label="Culinary voyage from Calicut to Scotland">
+      {voyageStops.length > 0 && <section className="menuVoyage" id="voyage" ref={voyageRef} style={{"--voyage-progress": 0} as React.CSSProperties} aria-label="Six Kerala food regions">
         <div className="voyageStage">
           <div className="voyageTrack">
             {voyageStops.map((stop, index) => {
               const dish = itemById.get(stop.itemId)!;
               return (
-                <article className="portPanel" id={`port-${index}`} key={`${stop.port}-${stop.itemId}`}>
+                <article className="portPanel" id={`area-${index}`} key={stop._key || `${stop.area}-${stop.itemId}`}>
                   <div className="portImage"><Image src={stop.image.url} alt={stop.image.alt} fill sizes="(max-width: 820px) 100vw, 58vw" priority={index === 0} /><div className="portImageShade" /><span className="portNumeral">{String(index + 1).padStart(2, "0")}</span></div>
                   <div className="portContent">
                     <div className="portMeta"><span>{stop.coordinates}</span><span>{stop.year}</span></div>
-                    <p className="portRegion">Port {String(index + 1).padStart(2, "0")} · {stop.region}</p>
-                    <h2>{stop.port}</h2><div className="dishRule" /><p className="courseLabel">{stop.course}</p><h3>{dish.name}</h3>
+                    <p className="portRegion">Region {String(index + 1).padStart(2, "0")} · {stop.region}</p>
+                    <h2>{stop.area}</h2><div className="dishRule" /><p className="courseLabel">{stop.course}</p><h3>{dish.name}</h3>
                     <p className="dishDescription">{stop.description}</p>
                     <div className="dishFooter"><strong>{formatPrice(dish.pricePence, dish.priceLabel)}</strong><DietaryMarker status={dish.dietaryStatus} compact />{dish.dietaryReviewStatus === "needs-review" && dish.dietaryStatus !== "notApplicable" && <span className="dishAttribute">Recipe check pending</span>}</div>
                     {dish.onlineOrdering && <AddToOrder id={dish.id} />}
@@ -83,17 +95,23 @@ export function MenuExperience({categories, items, page}: {categories: MenuCateg
               );
             })}
           </div>
-          {voyageStops.length > 1 && <div className="routeNavigator" aria-label="Choose a port"><div className="routeLineBase"><div /></div><div className="routeShip"><ShipMark /></div>{voyageStops.map((stop, index) => <button type="button" key={`${stop.port}-${index}`} className={index === activeStop ? "isActive" : ""} onClick={() => handleStopSelect(index)} aria-label={`Travel to ${stop.port}`} aria-current={index === activeStop ? "step" : undefined}><i /><span>{stop.port}</span></button>)}</div>}
-          <div className="voyageInstruction" aria-hidden="true"><span>Scroll to sail</span><i><b /></i></div>
+          {voyageStops.length > 1 && <div className="routeNavigator" aria-label="Choose a Kerala food region"><div className="routeLineBase"><div /></div><div className="routeShip"><ShipMark /></div>{voyageStops.map((stop, index) => <button type="button" key={`${stop.area}-${index}`} className={index === activeStop ? "isActive" : ""} onClick={() => handleStopSelect(index)} aria-label={`Explore ${stop.area}`} aria-current={index === activeStop ? "step" : undefined}><i /><span>{stop.area}</span></button>)}</div>}
+          <div className="voyageInstruction" aria-hidden="true"><span>Scroll Kerala</span><i><b /></i></div>
         </div>
       </section>}
 
       <section className="manifest" aria-labelledby="manifest-title">
         <div className="manifestIntro"><p className="menuKicker">{page.manifestEyebrow} · {items.length} listings</p><h2 id="manifest-title">{page.manifestHeading}</h2><p>{page.manifestIntroduction}</p></div>
-        <nav className="menuCategoryNav" aria-label="Menu categories">{categories.map((category) => <a href={`#${category.slug}`} key={category.slug}>{category.note}</a>)}</nav>
+        <div className="menuSearch">
+          <label htmlFor="menu-search">Find a dish</label>
+          <div><input id="menu-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search by dish, ingredient or category" autoComplete="off" /><span aria-hidden="true">⌕</span>{searchQuery && <button type="button" onClick={() => setSearchQuery("")}>Clear</button>}</div>
+          <p aria-live="polite">{normalisedSearch ? `${filteredItems.length} ${filteredItems.length === 1 ? "dish" : "dishes"} found` : "Search the full menu"}</p>
+        </div>
+        {visibleCategories.length > 0 && <nav className="menuCategoryNav" aria-label="Menu categories">{visibleCategories.map((category) => <a href={`#${category.slug}`} key={category.slug}>{category.note}</a>)}</nav>}
+        {normalisedSearch && filteredItems.length === 0 && <div className="menuSearchEmpty"><p>No dishes match “{searchQuery.trim()}”.</p><span>Try a dish name, ingredient or category—or clear the search to see the full menu.</span><button type="button" onClick={() => setSearchQuery("")}>Show the full menu</button></div>}
         <div className="manifestGrid">
-          {categories.map((category) => {
-            const categoryItems = items.filter((menuItem) => menuItem.category === category.slug);
+          {visibleCategories.map((category) => {
+            const categoryItems = filteredItems.filter((menuItem) => menuItem.category === category.slug);
             if (!categoryItems.length) return null;
             let previousSubheading = "";
             return (

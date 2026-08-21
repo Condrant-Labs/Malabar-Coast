@@ -3,11 +3,13 @@
 ## Trust boundaries
 
 - Menu IDs and quantities are accepted from the browser; names, availability, prices and totals are rebuilt on the server.
-- Stripe and Worldpay secrets, webhook credentials and the Supabase secret/service-role key are server-only.
+- Stripe and Brevo secrets, webhook credentials and the Supabase secret/service-role key are server-only.
 - Customer order pages and `/api/orders/[id]` require a signed HTTP-only order-access cookie. The cookie carries the ten most recent orders from that browser, so a second checkout no longer revokes access to the first.
 - `/admin` authenticates email and password through Supabase Auth, then requires an active `admin_profiles` row with the required least-privilege role. The application issues a signed, HTTP-only, SameSite Strict eight-hour session and rechecks role, active state and `session_version` on every request. Incrementing `session_version` or deactivating the profile invalidates every issued session. State-changing requests also require same origin and a session-bound CSRF token.
-- Payment state can only be applied through authenticated provider events or a provider payment/session verified directly with Stripe or Worldpay.
+- Payment state can only be applied through authenticated Stripe events or a Checkout Session verified directly with Stripe.
 - Rate limiting reads the client address from the right of `x-forwarded-for`, after `TRUSTED_PROXY_COUNT` hops, or from an edge header the platform overwrites. Reading the left-most entry would let any client forge an address and reset every bucket. Set `TRUSTED_PROXY_COUNT` to match the deployment.
+- Table and hall submissions are same-origin, size-limited, server-validated and rate-limited. Seat capacity is claimed atomically in the database; public database roles have no direct table or function access.
+- Brevo API credentials remain server-only. Email HTML escapes customer-controlled values, and a private delivery log prevents duplicate messages during webhook or request retries.
 
 ## Response protection
 
@@ -17,9 +19,7 @@ Admin, order, checkout and API routes receive no-index headers from `next.config
 
 ## Payment event integrity
 
-Worldpay Hosted Payment Pages keep card data and 3DS outside this application. Event signatures are verified as HMAC-SHA256 against the untouched request body before JSON parsing. Worldpay event types are matched against an explicit table rather than by substring. An event type this release does not know is logged and ignored so it can never be guessed into a terminal state.
-
-Worldpay creates its payment ID only after the customer submits the hosted page. The checkout URL is stored without inventing a provider reference; the first signed event or authenticated Payment Queries result atomically binds the real payment ID. Stripe Checkout creates its session ID before redirect and binds it immediately. Both reconciliation paths require the provider reference, order identity, amount and currency before paid or another irreversible state can be applied.
+Stripe Checkout keeps card data and 3DS outside this application. Signed webhook events and authenticated Checkout Session lookups must match the provider reference, order identity, amount and currency before paid or another irreversible state can be applied.
 
 `supabase/schema.sql` owns all state-changing order invariants. `order_database_health` and `admin_auth_health` version the required migration for readiness checks. `create_checkout_order` atomically claims a unique idempotency digest; `attach_checkout_provider_reference` binds the provider identity without stale JSON replacement; `transition_order_status` and `update_order_admin_notes` validate the active staff role and write audit evidence in the same transaction; and `apply_order_payment_event` deduplicates and validates provider reference, amount and currency. Run the current schema before enabling the matching production build. Webhooks and administrator mutations fail closed when authentication, authorization, provider verification or a database function is missing.
 
@@ -36,10 +36,10 @@ Collection orders omit the delivery step.
 - Use a final HTTPS `NEXT_PUBLIC_SITE_URL`; never rely on the request Host header for payment returns.
 - Configure Supabase and run the current schema. Confirm both health RPC versions, create staff in Supabase Auth, and activate only the minimum required `admin_profiles` roles. Production checkout must not use local JSON storage.
 - Configure Stripe test keys and signed webhooks, then test paid, asynchronous, failed and expired sessions.
-- Keep Worldpay disabled until Hosted Payment Pages, signed events and Payment Queries reconciliation have passed Try testing.
 - Generate separate high-entropy values for `ADMIN_SESSION_SECRET` and `ORDER_ACCESS_SECRET`.
 - Store all secrets in the deployment secret manager, not source control or public variables.
-- Apply platform/WAF throttling to `/api/checkout`, `/api/orders/*`, `/api/admin/*` and both webhook paths.
+- Configure the verified Brevo sender and owner inbox, then test customer and owner delivery without exceeding the account's daily allowance.
+- Apply platform/WAF throttling to `/api/checkout`, `/api/reservations`, `/api/hall-enquiries`, `/api/orders/*`, `/api/admin/*` and the Stripe webhook path.
 - Confirm refunds, delivery radius, operating hours, lead times, minimum order and privacy/retention policy before launch.
 - Have the owner and qualified advisers approve the privacy, cookie, payment, cancellation and refund pages before accepting live orders.
 - Configure monitoring for checkout failures, webhook failures and repeated administrator login rejection.
@@ -52,7 +52,7 @@ Collection orders omit the delivery step.
 2. Inspect headers on `/`, `/checkout`, `/order/test`, `/admin/login` and `/api/payment-config`, against `next start` rather than `next dev`.
 3. Confirm private routes return `X-Robots-Tag` and `Cache-Control: no-store`, and that `script-src` carries a fresh `nonce-` value with `'strict-dynamic'`; `'unsafe-inline'` may appear only as the documented legacy fallback.
 4. Confirm the browser console reports no CSP violation on `/`, `/menu`, `/story` and `/checkout`.
-5. Confirm unsigned Stripe and Worldpay webhook requests are rejected.
+5. Confirm unsigned Stripe webhook requests are rejected.
 6. Confirm order status is unavailable without its signed cookie.
 7. Confirm an administrator cannot skip fulfilment steps or establish payment manually.
 8. Confirm inactive Auth users cannot log in; `viewer` cannot mutate; `kitchen` cannot write notes; `manager` cannot open settings; and a `session_version` increment revokes an existing session.

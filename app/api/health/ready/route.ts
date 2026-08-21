@@ -3,7 +3,7 @@ import { checkAdminAuthSchema, getAdminSession } from "../../../lib/admin-auth";
 import { checkDurableOrderStorage, isDurableOrderStorageConfigured } from "../../../lib/order-store";
 import { isProductionOrderAccessConfigured } from "../../../lib/order-access";
 import { isStripeProductionReady } from "../../../lib/payments/stripe";
-import { isWorldpayProductionReady } from "../../../lib/payments/worldpay";
+import { checkBrevoConnection } from "../../../lib/email/brevo";
 import { checkRateLimit, getClientAddress, noStoreJson } from "../../../lib/security";
 
 export const runtime = "nodejs";
@@ -29,9 +29,10 @@ export async function GET(request: Request) {
   }
 
   const storageConfigured = isDurableOrderStorageConfigured();
-  const [storageReachable, adminAuthReachable] = await Promise.all([
+  const [storageReachable, adminAuthReachable, transactionalEmailReachable] = await Promise.all([
     storageConfigured ? checkDurableOrderStorage() : Promise.resolve(false),
     checkAdminAuthSchema(),
+    checkBrevoConnection(),
   ]);
   const canonicalHttps = (() => {
     try { return new URL(process.env.NEXT_PUBLIC_SITE_URL || "").protocol === "https:"; } catch { return false; }
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
     orderAccessSigning: isProductionOrderAccessConfigured(),
     administratorAccess: adminAuthReachable,
     stripePayments: isStripeProductionReady(),
-    worldpayPayments: isWorldpayProductionReady(),
+    transactionalEmail: transactionalEmailReachable,
   };
   const ready = Object.values(checks).every(Boolean);
   const body: Record<string, unknown> = { status: ready ? "ready" : "not_ready", time: new Date().toISOString() };

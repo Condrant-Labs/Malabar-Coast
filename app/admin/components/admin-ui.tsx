@@ -9,9 +9,11 @@ const navigation = [
   { href: "/admin", label: "Overview", mark: "01", permission: "dashboard:read" },
   { href: "/admin/orders", label: "Orders", mark: "02", permission: "orders:read" },
   { href: "/admin/kitchen", label: "Kitchen", mark: "03", permission: "kitchen:read" },
-  { href: "/admin/reports", label: "Reports", mark: "04", permission: "reports:read" },
-  { href: "/admin/content", label: "Content", mark: "05", permission: "content:write" },
-  { href: "/admin/settings", label: "System", mark: "06", permission: "settings:read" },
+  { href: "/admin/reservations", label: "Tables", mark: "04", permission: "reservations:read" },
+  { href: "/admin/hall-enquiries", label: "Hall", mark: "05", permission: "hall:read" },
+  { href: "/admin/reports", label: "Reports", mark: "06", permission: "reports:read" },
+  { href: "/admin/content", label: "Content", mark: "07", permission: "content:write" },
+  { href: "/admin/settings", label: "System", mark: "08", permission: "settings:read" },
 ] satisfies { href: string; label: string; mark: string; permission: AdminPermission }[];
 
 export function AdminFrame({ active, session, children }: { active: string; session: AdminSession; children: ReactNode }) {

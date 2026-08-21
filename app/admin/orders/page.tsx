@@ -19,7 +19,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const q = (query.q || "").trim().toLowerCase().slice(0, 160);
   const status = Object.prototype.hasOwnProperty.call(orderStatusLabels, query.status || "") ? query.status as OrderStatus : "";
   const fulfilment = query.fulfilment === "collection" || query.fulfilment === "delivery" ? query.fulfilment : "";
-  const provider = query.provider === "stripe" || query.provider === "worldpay" ? query.provider : "";
+  const provider = query.provider === "stripe" ? query.provider : "";
   const allOrders = await listOrdersForReport(undefined, undefined, {
     statuses: status ? [status] : undefined,
     fulfilment: fulfilment || undefined,
@@ -54,7 +54,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         <label className="adminSearchField"><span>Search</span><input name="q" defaultValue={q} placeholder="Order, customer, email, phone or dish" /></label>
         <label><span>Status</span><select name="status" defaultValue={status}><option value="">All statuses</option>{Object.entries(orderStatusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         <label><span>Method</span><select name="fulfilment" defaultValue={fulfilment}><option value="">All methods</option><option value="collection">Collection</option><option value="delivery">Delivery</option></select></label>
-        <label><span>Payment</span><select name="provider" defaultValue={provider}><option value="">All providers</option><option value="stripe">Stripe</option><option value="worldpay">Worldpay</option></select></label>
+        <label><span>Payment</span><select name="provider" defaultValue={provider}><option value="">All payments</option><option value="stripe">Stripe</option></select></label>
         <button className="adminButton" type="submit">Apply filters</button>
         {(q || status || fulfilment || provider) && <Link className="adminTextButton" href="/admin/orders">Clear</Link>}
       </form>

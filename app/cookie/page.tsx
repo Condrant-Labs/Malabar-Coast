@@ -49,7 +49,7 @@ const sections: LegalSection[] = [
         <li><strong>Basket and interface storage</strong> — remembers items you add and limited interface preferences on your device.</li>
         <li><strong>Order-access storage</strong> — helps keep customer order pages private after checkout.</li>
         <li><strong>Security and administration cookies</strong> — support secure, authenticated access to restricted staff areas.</li>
-        <li><strong>Payment-provider storage</strong> — Stripe or Worldpay may set essential storage on their hosted checkout pages under their own policies.</li>
+        <li><strong>Payment-provider storage</strong> — Stripe may set essential storage on its hosted checkout pages under its own policies.</li>
       </ul>
     ),
   },

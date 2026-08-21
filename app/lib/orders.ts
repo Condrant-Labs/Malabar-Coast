@@ -1,6 +1,6 @@
 import { getCheckoutMenuItem } from "@/sanity/lib/menu";
 
-export type PaymentProvider = "stripe" | "worldpay";
+export type PaymentProvider = "stripe";
 export type FulfilmentMethod = "collection" | "delivery";
 export type PaymentStatus =
   | "pending"
@@ -239,8 +239,8 @@ export function getDeliveryFeePence() {
 export async function validateCheckout(input: unknown) {
   if (!input || typeof input !== "object") throw new CheckoutValidationError("Checkout details are missing.");
   const body = input as Record<string, unknown>;
-  if (body.provider !== "stripe" && body.provider !== "worldpay") throw new CheckoutValidationError("Choose a payment method.");
-  const provider: PaymentProvider = body.provider;
+  if (body.provider !== "stripe") throw new CheckoutValidationError("Stripe is the only supported payment method.");
+  const provider: PaymentProvider = "stripe";
   if (body.fulfilment !== "collection" && body.fulfilment !== "delivery") throw new CheckoutValidationError("Choose collection or delivery.");
   const fulfilment: FulfilmentMethod = body.fulfilment;
 

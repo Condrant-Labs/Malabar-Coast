@@ -5,8 +5,9 @@ import {checkoutMenuItemQuery, menuContentQuery} from "./queries";
 export type CmsImage = {url: string; alt: string; dimensions?: {width: number; height: number; aspectRatio: number}};
 
 export type MenuVoyageStop = {
+  _key?: string;
   itemId: string;
-  port: string;
+  area: string;
   region: string;
   coordinates: string;
   year: string;
@@ -30,23 +31,23 @@ export type MenuPageContent = {
 };
 
 const fallbackMenuPage: MenuPageContent = {
-  eyebrow: "The culinary passage · East to West",
-  headingLineOne: "Six ports.",
-  headingLineTwo: "One table.",
-  introduction: "A menu plotted across the old sea road. Each port leaves something on the plate: pepper, coconut, fire, smoke — and finally, Scotland.",
-  journeyLinkLabel: "Begin the voyage",
+  eyebrow: "A taste of Kerala · North to South",
+  headingLineOne: "Six regions.",
+  headingLineTwo: "One Kerala.",
+  introduction: "Travel through six Kerala food landscapes, from Malabar's biriyani kitchens to Kuttanad's banana-leaf fish and the coconut-rich curries of the southern coast.",
+  journeyLinkLabel: "Explore Kerala",
   manifestEyebrow: "The full menu",
   manifestHeading: "What we carry to the table.",
   manifestIntroduction: "The current Malabar Coast menu, prepared for sharing and available to order online where shown.",
   dietaryNotice: "Dietary labels are based on the supplied menu names and still require confirmation from the restaurant. Please tell the team about allergies before ordering; the kitchen handles all 14 regulated allergens and cross-contact may occur.",
   alcoholNotice: "Alcoholic-drink prices are not published online. Please ask the restaurant team for the current bar price list. Alcohol is not available through online ordering.",
   voyageStops: [
-    {itemId: "malabar-coast-signature-konju-coconut-fry", port: "Calicut", region: "Malabar Coast · India", coordinates: "11.2588° N · 75.7804° E", year: "The point of origin", course: "House signature", image: {url: "/menu/calicut-pepper-prawns.png", alt: "Prawns with curry leaves and charred lime"}, description: "Coastal spice, coconut and the bright heat of the Malabar shore."},
-    {itemId: "malabar-coast-signature-masala-grilled-fish", port: "Malindi", region: "Swahili Coast · Kenya", coordinates: "3.2192° S · 40.1169° E", year: "Across the monsoon", course: "From the sea", image: {url: "/menu/malindi-sea-bass.png", alt: "Masala grilled fish with herbs and citrus"}, description: "Malabar seasoning meets the fire-led cooking of the Swahili coast."},
-    {itemId: "malabar-coast-signature-prawn-moilee", port: "Mozambique", region: "Mozambique Island", coordinates: "15.0360° S · 40.7327° E", year: "The chilli passage", course: "Coastal curry", image: {url: "/menu/mozambique-lobster.png", alt: "Coastal shellfish with fragrant rice and lime"}, description: "A coconut-led coastal curry remembering the old Indian Ocean passage."},
-    {itemId: "malabar-coast-signature-aattirachi-kurumulak", port: "The Cape", region: "Cape of Good Hope", coordinates: "34.3568° S · 18.4740° E", year: "Where two oceans meet", course: "From the land", image: {url: "/menu/cape-malay-lamb.png", alt: "Pepper-spiced lamb with flaky porotta"}, description: "Lamb and black pepper carried around the Cape in a deeply warming plate."},
-    {itemId: "desserts-malabar-coast-special-dessert", port: "Lisbon", region: "Tagus · Portugal", coordinates: "38.7223° N · 9.1393° W", year: "Landfall in Europe", course: "Sweet passage", image: {url: "/menu/lisbon-custard-tart.png", alt: "A warm spiced dessert"}, description: "A sweet finish shaped by the same spice route."},
-    {itemId: "malabar-coast-signature-meen-moilee", port: "Holytown", region: "Scotland · The new coast", coordinates: "55.8207° N · 3.9735° W", year: "The voyage continues", course: "Our coast", image: {url: "/menu/scotland-haddock.png", alt: "Fish in a golden coconut moilee"}, description: "Kerala coconut and Scottish hospitality brought to one table."},
+    {itemId: "biriyani-chicken", area: "Kozhikode", region: "North Malabar", coordinates: "11.2588° N · 75.7804° E", year: "The biriyani capital", course: "Malabar rice", image: {url: "/menu/calicut-pepper-prawns.png", alt: "A warmly spiced Malabar dish served with Kerala accompaniments"}, description: "Kozhikode is one of Malabar cuisine's great centres, celebrated for fragrant dum biriyani and generous coastal hospitality."},
+    {itemId: "malabar-coast-signature-konju-coconut-fry", area: "Kannur", region: "North Kerala coast", coordinates: "11.8745° N · 75.3704° E", year: "Coconut and coast", course: "Coastal fry", image: {url: "/menu/malindi-sea-bass.png", alt: "Prawns cooked with coconut, curry leaves and Kerala spices"}, description: "A northern coastal plate of prawns, coconut and curry leaves, carrying the bold savoury character of Kerala's Arabian Sea shore."},
+    {itemId: "desserts-palada-payasam", area: "Palakkad", region: "The Kerala gap", coordinates: "10.7867° N · 76.6548° E", year: "Rice and harvest", course: "Festive sweet", image: {url: "/menu/lisbon-custard-tart.png", alt: "Creamy palada payasam served as a Kerala festive dessert"}, description: "Slow-cooked rice ada and milk give this beloved festive payasam its gentle sweetness and unmistakably Keralite finish."},
+    {itemId: "malabar-coast-signature-prawn-moilee", area: "Kochi", region: "Central Kerala coast", coordinates: "9.9312° N · 76.2673° E", year: "Harbour kitchen", course: "Coconut curry", image: {url: "/menu/mozambique-lobster.png", alt: "Prawns in a golden coconut moilee with curry leaves"}, description: "A harbour-side style of mild coconut curry, bright with ginger, green chilli and curry leaf around tender prawns."},
+    {itemId: "malabar-coast-signature-fish-pollichathu", area: "Kuttanad", region: "Alappuzha backwaters", coordinates: "9.4981° N · 76.3388° E", year: "Below sea level", course: "Banana-leaf fish", image: {url: "/menu/scotland-haddock.png", alt: "Spiced fish wrapped and cooked in banana leaf"}, description: "Kuttanad's backwater cooking is closely associated with fish pollichathu: spice-coated fish wrapped in banana leaf and cooked until aromatic."},
+    {itemId: "malabar-coast-signature-beef-roast", area: "Kottayam", region: "Central Travancore", coordinates: "9.5916° N · 76.5222° E", year: "Pepper country", course: "Slow roast", image: {url: "/menu/cape-malay-lamb.png", alt: "Kerala-style beef roast with black pepper, shallots and curry leaves"}, description: "Deep-roasted meat, black pepper, coconut and curry leaves evoke the robust Syrian-Christian kitchens of central Travancore."},
   ],
 };
 

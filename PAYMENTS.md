@@ -19,18 +19,6 @@ Register `POST /api/webhooks/stripe` for Checkout Session completed, async succe
 
 Production readiness requires live Stripe credentials. Test credentials work locally, but cannot make the production readiness endpoint healthy.
 
-## Worldpay
-
-Set the Access API username/password, merchant entity, and `WORLDPAY_ENVIRONMENT=try`. The merchant entity is available in Worldpay Dashboard under Developer Tools and commonly starts with `PO`. This integration uses full-page Hosted Payment Pages, so `NEXT_PUBLIC_WORLDPAY_CHECKOUT_ID` and browser card sessions are not used. Worldpay captures card data, 3DS and enabled wallets on its own page.
-
-Register `POST /api/webhooks/worldpay`, ask Worldpay to enable the `Event-Signature` header, and store the shared secret as `WORLDPAY_WEBHOOK_SECRET`. The endpoint verifies the HMAC against the untouched request body before parsing JSON. Unsigned requests and legacy Basic authentication are not accepted.
-
-The endpoint is idempotent by event ID. Event types are matched against the explicit table in `app/lib/payments/worldpay-events.ts`; anything outside it is logged as `Ignored an unmapped Worldpay event type` and changes nothing. HPP sends value data as `eventDetails.amount.value` and `eventDetails.amount.currencyCode`; both are checked with the order and provider payment ID before financial state changes.
-
-Worldpay creates its `paymentId` after the customer submits the hosted page, while normal HPP webhooks identify the order with `transactionReference`. Checkout therefore stores only the HPP URL initially. Before a signed paid, refund, dispute, or reversal event changes financial state, the handler resolves the unique payment ID through Payment Queries and validates the original order value. If Payment Queries is still catching up, the handler returns a temporary failure so Worldpay retries instead of acknowledging an event the database cannot safely bind. The success and customer order pages use the same query path while a webhook is delayed.
-
-Keep `WORLDPAY_CHECKOUT_ENABLED=false` until the Try HPP redirect, authorized/refused results, expiry return, signed webhook and delayed-query reconciliation pass acceptance. Production checkout and readiness require `WORLDPAY_ENVIRONMENT=live` plus HMAC webhook signing.
-
 ## Administrator operations
 
 The private portal is served at `/admin`. It includes a live overview, complete order register, kitchen board, daily/monthly reports, deployment readiness, individual order details and staff-only operations notes. Administrators cannot create payment success: signed provider events establish payment state, and the portal can only advance valid fulfilment transitions after payment is confirmed.
@@ -45,7 +33,7 @@ Roles are `owner`, `admin`, `manager`, `kitchen` and `viewer`. The application a
 
 ## Operational notes
 
-- Never expose Stripe, Worldpay API, webhook, or Supabase secret/service-role credentials to the browser.
+- Never expose Stripe, Brevo, webhook, or Supabase secret/service-role credentials to the browser.
 - Use separate test and live environment variables.
 - Keep `NEXT_PUBLIC_SITE_URL` on the final HTTPS origin so provider redirects return correctly.
 - Do not treat a checkout return URL as proof of payment. Only an authenticated provider query or atomic signed webhook may establish paid state.

@@ -1,0 +1,17 @@
+.form { display: grid; gap: 1.2rem; }
+.grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.full { grid-column: 1/-1; }
+.form label { display: grid; gap: .48rem; color: rgba(16,32,28,.68); font-size: .58rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.form input,.form select,.form textarea { width: 100%; min-height: 3.25rem; padding: .8rem .9rem; border: 1px solid rgba(16,32,28,.25); border-radius: .25rem; outline: none; background: rgba(255,255,255,.7); color: #10201c; font: .9rem/1.4 "Avenir Next",Arial,sans-serif; text-transform: none; }
+.form textarea { min-height: 7rem; resize: vertical; }
+.form input:focus,.form select:focus,.form textarea:focus { border-color: #96672f; box-shadow: 0 0 0 3px rgba(150,103,47,.13); }
+.consent { display: grid !important; grid-template-columns: auto 1fr; align-items: start; gap: .7rem !important; font-weight: 500 !important; line-height: 1.5; letter-spacing: 0 !important; text-transform: none !important; }
+.consent input { width: 1rem; min-height: 1rem; margin-top: .15rem; accent-color: #173d32; }
+.button { display: inline-flex; min-height: 3.5rem; align-items: center; justify-content: space-between; gap: 3rem; padding: .8rem 1rem; border: 0; border-radius: .25rem; background: #102d25; color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; cursor: pointer; }
+.button:disabled { cursor: wait; opacity: .55; }
+.message { margin: 0; padding: .9rem 1rem; border-left: 3px solid #a54842; background: #faeeec; color: #742f2a; font: .9rem/1.5 "Iowan Old Style",Georgia,serif; }
+.success { border-color: #34745d; background: #eaf4ef; color: #205342; }
+.summary { display: grid; gap: .55rem; padding: 1rem; border: 1px solid rgba(16,32,28,.16); background: rgba(255,255,255,.35); }
+.summary strong { font: 1.2rem "Iowan Old Style",Georgia,serif; }
+.summary span { color: rgba(16,32,28,.65); font-size: .75rem; line-height: 1.5; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .full { grid-column: auto; } }
